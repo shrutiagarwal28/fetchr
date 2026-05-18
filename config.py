@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DB_PATH: str = os.getenv("DB_PATH", "fetchr.db")
+JSON_PATH: str = os.getenv("JSON_PATH", "fetchr.json")
 
 # Realistic Chrome UA so PetFinder doesn't fingerprint us as a bot immediately.
 # Override via USER_AGENT in .env if you need to rotate.

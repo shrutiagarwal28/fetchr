@@ -1,20 +1,27 @@
 """
-DB setup and upsert logic.
+DB setup, upsert logic, and JSON export.
 
 upsert_dog() is the only write path — everything funnels through it so
 deduplication is always enforced. It returns an action string so callers
 can count created/updated/skipped without re-querying.
+
+export_to_json() is a read-only snapshot: it reads all rows from SQLite
+and writes them to a JSON file so the data is inspectable without sqlite3.
 """
 
 from __future__ import annotations
 
+import json
 import logging
+import os
+import tempfile
 from datetime import datetime
+from pathlib import Path
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session as SessionType
 
-from config import DB_PATH
+from config import DB_PATH, JSON_PATH
 from models.dog import Base, DogORM, DogProfile
 
 logger = logging.getLogger(__name__)
@@ -60,3 +67,34 @@ def upsert_dog(session: SessionType, profile: DogProfile) -> str:
         session.rollback()
         logger.exception("Failed to insert dog source_id=%s", profile.source_id)
         return "skipped"
+
+
+def export_to_json(path: str = JSON_PATH) -> int:
+    """
+    Snapshot all dog records from SQLite into a JSON file.
+
+    Uses an atomic write (temp file → os.replace) so a crash mid-export
+    never leaves a half-written file at the destination path.
+
+    Returns the number of records written.
+    """
+    with Session() as session:
+        rows: list[DogORM] = session.query(DogORM).all()
+
+    records = []
+    for row in rows:
+        # Strip SQLAlchemy's internal tracking key before converting to Pydantic.
+        row_dict = {k: v for k, v in row.__dict__.items() if not k.startswith("_")}
+        # model_dump(mode="json") converts datetime → ISO string automatically.
+        profile = DogProfile.model_validate(row_dict)
+        records.append(profile.model_dump(mode="json"))
+
+    dest = Path(path)
+    dir_ = dest.parent
+    with tempfile.NamedTemporaryFile("w", dir=dir_, delete=False, suffix=".tmp") as f:
+        json.dump(records, f, indent=2)
+        tmp_path = f.name
+
+    os.replace(tmp_path, str(dest))
+    logger.info("Exported %d records to %s", len(records), path)
+    return len(records)

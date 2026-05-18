@@ -26,6 +26,7 @@ logger = logging.getLogger("fetchr")
 def _run_scrape(source: str, max_results: int, headless: bool) -> None:
     from scrapers.petfinder import PetFinderScraper
     from scrapers.adoptapet import AdoptAPetScraper
+    from db.connection import export_to_json
 
     scrapers = {
         "petfinder": lambda: PetFinderScraper(max_results=max_results, headless=headless).run(),
@@ -37,6 +38,8 @@ def _run_scrape(source: str, max_results: int, headless: bool) -> None:
     for target in targets:
         logger.info("Starting scraper: %s (max=%d)", target, max_results)
         scrapers[target]()
+
+    export_to_json()
 
 
 def main() -> None:
