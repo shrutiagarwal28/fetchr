@@ -204,7 +204,57 @@ class PetFinderScraper(BaseScraper):
         return CARD_SELECTORS[-1]
 
     def _collect_card_urls(self, page: Page) -> list[str]:
-        """Scroll listing page until cards stabilize, collect all detail URLs."""
+        """
+        Paginate through listing pages until max_results URLs are collected or
+        a page yields no new cards (signals the last page).
+
+        PetFinder uses ?page=N for pagination. Page 1 is already loaded by the
+        caller, so we only navigate for page 2+.
+        """
+        urls: list[str] = []
+        seen: set[str] = set()
+        page_num = 1
+        # Safety cap: prevents an infinite loop if max_results is very large
+        # and PetFinder somehow keeps returning cards. 20 pages × ~20 cards ≈ 400 dogs.
+        MAX_PAGES = 20
+
+        while len(urls) < self.max_results and page_num <= MAX_PAGES:
+            if page_num > 1:
+                next_page_url = f"{START_URL}?page={page_num}"
+                logger.info("Navigating to listing page %d", page_num)
+                page.goto(next_page_url, wait_until="domcontentloaded", timeout=60_000)
+
+            remaining = self.max_results - len(urls)
+            new_urls = self._collect_cards_on_page(page, seen, remaining)
+
+            if not new_urls:
+                # Empty page means we've gone past the last results page
+                logger.info("No new cards on page %d — reached last listing page", page_num)
+                break
+
+            urls.extend(new_urls)
+            logger.info(
+                "Listing page %d: %d new cards (total collected: %d / %d)",
+                page_num, len(new_urls), len(urls), self.max_results,
+            )
+            page_num += 1
+
+            # Polite delay between page navigations (not needed after the last page)
+            if len(urls) < self.max_results and page_num <= MAX_PAGES:
+                self._random_delay()
+
+        return urls
+
+    def _collect_cards_on_page(
+        self, page: Page, seen: set[str], remaining: int
+    ) -> list[str]:
+        """
+        Scroll the current listing page until cards stabilize or `remaining` is hit,
+        then return only URLs not yet in `seen`. Updates `seen` in-place.
+
+        `remaining` is passed in (rather than using self.max_results directly) so that
+        the scroll-stop condition accounts for cards already collected on prior pages.
+        """
         page.wait_for_timeout(3000)
         card_selector = self._resolve_card_selector(page)
 
@@ -216,17 +266,17 @@ class PetFinderScraper(BaseScraper):
             page.wait_for_timeout(2500)
             current_count = len(page.query_selector_all(card_selector))
 
-            if current_count >= self.max_results:
+            # Stop scrolling early once we have enough candidates visible on this page
+            if current_count >= remaining:
                 break
             if current_count == prev_count:
                 stable_rounds += 1
             else:
                 stable_rounds = 0
-                logger.debug("Cards: %d → %d", prev_count, current_count)
+                logger.debug("Cards loading: %d → %d", prev_count, current_count)
             prev_count = current_count
 
-        urls: list[str] = []
-        seen: set[str] = set()
+        new_urls: list[str] = []
         for card in page.query_selector_all(card_selector):
             href = card.get_attribute("href") or ""
             if not href:
@@ -234,8 +284,8 @@ class PetFinderScraper(BaseScraper):
             full_url = href if href.startswith("http") else urljoin(BASE_URL, href)
             if full_url not in seen:
                 seen.add(full_url)
-                urls.append(full_url)
-        return urls
+                new_urls.append(full_url)
+        return new_urls
 
     def _scrape_detail_page(self, page: Page, url: str) -> Optional[DogProfile]:
         """
