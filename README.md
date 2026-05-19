@@ -25,6 +25,9 @@ python main.py scrape --source petfinder
 # Scrape a smaller batch for testing
 python main.py scrape --source petfinder --max 10
 
+# Avoid bot detection. 
+python3 main.py scrape --source petfinder --max 1000 --no-headless
+
 # Adopt-a-Pet (stub — logs a warning, not yet implemented)
 python main.py scrape --source adoptapet
 

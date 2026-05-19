@@ -151,3 +151,286 @@ The file won't be picked up automatically — it's just a plain file, not part o
      # Inspect DB
      sqlite3 fetchr.db "SELECT name, breed_primary, city, status FROM dog_profiles LIMIT 10;"
      sqlite3 fetchr.db "SELECT COUNT(*) FROM dog_profiles;"
+
+/install-github-app
+
+Okay, now that I have this data, what do I do if I have to clean it  
+  and put it as input into an ML matching algorithm? Let's say I want  
+  to match the dog to certain traits using ML instead of a DB query.   
+  What is the first step that I should do as a staff engineer?         
+
+⏺ As a staff engineer, the first step is not touching ML. It's problem 
+  framing + data audit. In that order.
+
+  ---
+  Step 1: Frame the problem precisely
+  
+  "Match a dog to certain traits" is too vague to build anything. You
+  need to answer three questions before writing a single line of ML
+  code:
+
+  What is the input?
+  A user's stated preferences? (e.g., "small, good with kids, house
+  trained") — or something richer like lifestyle data, previous matches
+   they liked?
+
+  What is the output?
+  A ranked list of dogs? A binary good-match/bad-match score? A
+  similarity percentage?
+
+  What kind of ML problem is this?
+  - Filtering + ranking (rule-based filter first, then ML ranks what's
+  left) — simplest, often best
+  - Vector similarity search (embed both theuser query and each dog as
+   vectors, find nearest neighbors) — good for fuzzy/semantic matching
+  - Collaborative filtering (if you ever have user-dog interaction
+  history) — only relevant if you have feedback data
+  
+  The answer changes the entire architecture. A staff engineer pins
+  this down in a design doc before writing any feature engineering
+  code.
+
+  ---
+  Step 2: Audit the data you actually have
+
+  Once you know what problem you're solving,you audit your fetchr.json
+   to understand what you can actually feed the model. The key
+  questions:
+
+  ┌──────────────────────────┬─────────────────────────────────────┐
+  │          Field           │           Question to ask           │
+  ├──────────────────────────┼─────────────────────────────────────┤
+  │ breed_primary            │ How many unique values? Is          │
+  │                          │ "Unknown" common?                   │
+  ├──────────────────────────┼─────────────────────────────────────┤
+  │ age_category, size,      │ Are the enums consistent or dirty?  │
+  │ gender                   │                                │
+  ├──────────────────────────┼─────────────────────────────────────┤
+  │ good_with_kids,          │ How many are null vs true/false?    │
+  │ good_with_dogs,          │ Nulls are not the same as false.    │
+  │ good_with_cats           │                                │
+  ├──────────────────────────┼─────────────────────────────────────┤
+  │                          │ What's the vocabulary size? Are     │
+  │ tags                     │ tags normalized or freeform         │
+  │                          │ strings?                        │
+  ├──────────────────────────┼─────────────────────────────────────┤
+  │                          │ How many dogshave one? Average     │
+  │ description              │ length? This is your richest signal │
+  │                          │  for semanticsearch.               │
+  └──────────────────────────┴─────────────────────────────────────┘
+
+  You'd run this in a notebook — just pandas + value_counts() + null
+  counts. The output tells you which fields are usable as features and
+  which are too sparse to trust.
+
+  ---
+  Why this order matters (the staff engineer lens)
+  
+  The most common junior mistake is jumping straight to model selection
+   — picking a neural net or a cosine similarity approach — before
+  What is the input?
+  A user's stated preferences? (e.g., "small,
+   good with kids, house trained") — or
+  something richer like lifestyle data,
+  previous matches they liked?
+
+  What is the output?
+  A ranked list of dogs? A binary
+  good-match/bad-match score? A similarity
+  percentage?
+
+  What kind of ML problem is this?
+  - Filtering + ranking (rule-based filter
+  first, then ML ranks what's left) —
+  simplest, often best
+  - Vector similarity search (embed both the
+  user query and each dog as vectors, find
+  nearest neighbors) — good for
+  fuzzy/semantic matching
+  - Collaborative filtering (if you ever have
+   user-dog interaction history) — only
+  relevant if you have feedback data
+
+  The answer changes the entire architecture.
+   A staff engineer pins this down in a
+  design doc before writing any feature
+  engineering code.
+
+  ---
+  Step 2: Audit the data you actually have
+
+  Once you know what problem you're solving,
+  you audit your fetchr.json to understand
+  what you can actually feed the model. The
+  key questions:
+
+  Field: breed_primary
+  Question to ask: How many unique values? Is
+
+    "Unknown" common?
+  ────────────────────────────────────────
+  Field: age_category, size, gender
+  Question to ask: Are the enums consistent
+  or
+    dirty?
+  ────────────────────────────────────────
+  Field: good_with_kids, good_with_dogs,
+    good_with_cats
+  Question to ask: How many are null vs
+    true/false? Nulls are not the same as
+    false.
+  ────────────────────────────────────────
+  Field: tags
+  Question to ask: What's the vocabulary
+  size?
+    Are tags normalized or freeform strings?
+  ────────────────────────────────────────
+  Field: description
+  Question to ask: How many dogs have one?
+    Average length? This is your richest
+    signal for semantic search.
+
+  You'd run this in a notebook — just pandas
+  + value_counts() + null counts. The output
+  tells you which fields are usable as
+  features and which are too sparse to trust.
+
+  ---
+  Why this order matters (the staff engineer
+  lens)
+
+  The most common junior mistake is jumping
+  straight to model selection — picking a
+  neural net or a cosine similarity approach
+  — before knowing if the data supports it.
+  If good_with_kids is null for 70% of your
+  dogs, it's not a feature, it's noise. If
+  description is missing for 40% of listings,
+   you can't rely on semantic embeddings as
+  your primary signal.
+
+  The audit also tells you whether you even
+  need ML. If users are saying "I want a
+  small, house-trained dog good with cats," a
+   SQL query with boolean filters returns a
+  ranked list in milliseconds with zero model
+   complexity. ML earns its complexity only
+  when the matching is fuzzy or semantic —
+  like "I want a calm, low-energy companion
+  for a quiet apartment."
+
+  ---
+  Concrete first action: Open fetchr.json in
+  a Jupyter notebook and run null counts +
+  value distributions on every field. That
+  single artifact tells you what your feature
+   space actually is. Want me to write that
+  audit notebook?
+
+✻ Churned for 42s
+
+※ recap: Building a dog adoption scraper that
+   exports to JSON, exploring ML matching 
+  next. Run the data audit notebook to 
+  understand field completeness before any 
+  feature engineering. (disable recaps in 
+  /config)
+
+  ---------
+
+  Fixing the scraper's pagination system :
+
+  Decision Breakdown
+
+  Key decisions:
+
+  - seen: set[str] lives in _collect_card_urls
+   and is passed by reference to
+  _collect_cards_on_page. This means
+  deduplication is global across pages — if
+  PetFinder ever shows the same dog on two
+  pages (promoted listings), it's collected
+  once.
+  - remaining parameter instead of 
+  self.max_results in the scroll loop — the
+  early-exit check must shrink as we collect
+  cards across pages, or page 2 would scroll
+  until it found max_results cards all by
+  itself, ignoring what was already collected
+  on page 1.
+  - MAX_PAGES = 20 safety cap — pure
+  pagination loops with a "stop on empty"
+  condition are safe for well-behaved sites
+  but could run forever if there's a bug or
+  PetFinder returns a redirect loop. The cap
+  is explicit and logged.
+  - _random_delay() only between pages, not 
+  after the last one — matches the existing
+  logic in _scrape which skips the delay after
+   the final detail page.
+
+  Pattern used: This is the Iterator / Cursor 
+  pattern — each loop iteration advances a
+  cursor (page_num), fetches a page of
+  results, and terminates on an empty page
+  sentinel. It's the same pattern used in
+  database pagination and API cursor
+  iteration.
+
+  ---
+  Watch Out For
+  
+  If PetFinder returns an error page (e.g.,
+  404 for ?page=999) that doesn't render any
+  cards, _collect_cards_on_page will return an
+   empty list and the loop will exit cleanly.
+  But if it returns an error page that happens
+   to contain some dog card markup (e.g., a
+  "suggested dogs" section), the loop might
+  not stop correctly. If you see the scraper
+  collecting unexpected dogs, add a check for
+  page.url matching a redirect destination.
+
+  ---
+  Testing Strategy
+  
+  - Smoke test: --max 25 with your real
+  location — should span at least 2 pages
+  (PetFinder shows ~20 cards per page) and you
+   should see "Listing page 2: N new cards" in
+   the logs.
+  - Unit test for _collect_cards_on_page: Mock
+   a Playwright page that returns a fixed set
+  of hrefs; assert that seen is updated and
+  only new URLs are returned on the second
+  call with the same seen set.
+  - Edge case: --max 5 should stop after page
+  1 (only scroll until 5 cards visible, never
+  navigate to page 2).
+  - Edge case: --max 1000 should stop at
+  MAX_PAGES with a log line, not loop forever.
+
+  ---
+  Interview Angle
+  
+  This is a classic external pagination
+  problem. An interviewer might ask: "How 
+  would you handle rate limits across pages?"
+  — the _random_delay() between pages is the
+  answer. They might also ask "How do you 
+  avoid re-scraping the same dog if it appears
+   on multiple pages?" — the shared seen set
+  across the pagination loop is the answer. It
+   demonstrates understanding of stateful
+  iteration and deduplication at the
+  collection layer, not just the storage
+  layer.
+
+✻ Baked for 1m 30s
+
+※ recap: Fixing the fetchr PetFinder scraper 
+  to paginate across multiple listing pages 
+  instead of stopping at page one. Next step: 
+  run the scraper with --max 25 to verify 
+  pagination works. (disable recaps in
+  /config)
