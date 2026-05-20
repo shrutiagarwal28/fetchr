@@ -79,6 +79,9 @@ class DogORM(Base):
     description = Column(Text, nullable=True)
     tags = Column(JSON, default=list, nullable=False)
     status = Column(String(20), default="available", nullable=False)
+    birth_date = Column(DateTime, nullable=True)
+    intake_date = Column(DateTime, nullable=True)
+    listed_at = Column(DateTime, nullable=True)
     first_seen_at = Column(DateTime, nullable=False)
     last_updated_at = Column(DateTime, nullable=False)
 
@@ -117,5 +120,8 @@ class DogProfile(BaseModel):
     description: Optional[str] = None
     tags: list[str] = []
     status: str = "available"  # available | pending | adopted
+    birth_date: Optional[datetime] = None       # dog's date of birth (physical.birthDate)
+    intake_date: Optional[datetime] = None      # when shelter first took the dog in
+    listed_at: Optional[datetime] = None        # when adoption status last changed on PetFinder
     first_seen_at: datetime = Field(default_factory=datetime.utcnow)
     last_updated_at: datetime = Field(default_factory=datetime.utcnow)

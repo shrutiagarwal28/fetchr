@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import logging
 import re
+from datetime import datetime
 from typing import Any, Optional
 from urllib.parse import urljoin
 
@@ -51,6 +52,21 @@ STATUS_MAP = {
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+def _parse_iso_dt(raw: Optional[str]) -> Optional[datetime]:
+    """
+    Parse an ISO 8601 timestamp string from PetFinder into a naive UTC datetime.
+    Handles both 'Z' and '+00:00' suffixes. Returns None if raw is absent or unparseable.
+    Stored as naive UTC to stay consistent with first_seen_at / last_updated_at.
+    """
+    if not raw:
+        return None
+    try:
+        return datetime.fromisoformat(raw.replace("Z", "+00:00")).replace(tzinfo=None)
+    except ValueError:
+        logger.warning("Could not parse datetime: %s", raw)
+        return None
+
 
 def _yn_to_bool(val: Optional[str]) -> Optional[bool]:
     """Convert PetFinder's Yes/No/Unknown strings to Python bool or None."""
@@ -302,6 +318,9 @@ class PetFinderScraper(BaseScraper):
         if animal is None:
             logger.warning("No __NEXT_DATA__ animal found at %s", url)
             return None
+
+        logger.info("residency object: %s", animal.get("residency"))
+        logger.info("physical.birthDate: %s", (animal.get("physical") or {}).get("birthDate"))
 
         # --- Identity ---
         source_id = animal.get("animalId") or _extract_source_id(url)
