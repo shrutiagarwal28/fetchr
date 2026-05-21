@@ -5,3 +5,7 @@ __pycache__/
 .venv/
 venv/
 .DS_Store
+.idea/
+debug_detail.png
+debug_page.html
+fetchr.json

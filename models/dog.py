@@ -22,6 +22,7 @@ from sqlalchemy import (
     Column,
     DateTime,
     Float,
+    Index,
     JSON,
     String,
     Text,
@@ -79,8 +80,55 @@ class DogORM(Base):
     description = Column(Text, nullable=True)
     tags = Column(JSON, default=list, nullable=False)
     status = Column(String(20), default="available", nullable=False)
+    birth_date = Column(DateTime, nullable=True)
+    intake_date = Column(DateTime, nullable=True)
+    listed_at = Column(DateTime, nullable=True)
     first_seen_at = Column(DateTime, nullable=False)
     last_updated_at = Column(DateTime, nullable=False)
+
+
+# ---------------------------------------------------------------------------
+# History / audit table
+# ---------------------------------------------------------------------------
+
+class DogProfileHistory(Base):
+    """
+    Append-only archive of a dog's live fields, snapshotted before each update.
+
+    Whenever upsert_dog() detects a change in any live field (status, behavior,
+    location, photos, etc.), it writes the *old* values here before overwriting
+    the main dog_profiles row. This gives a full timeline of every state change
+    — e.g. adoptable → pending → adopted — without bloating the main table.
+
+    dog_profile_id is a soft FK to dog_profiles.id (no DB-level constraint so
+    SQLite doesn't need foreign-key pragma to be enabled).
+    """
+    __tablename__ = "dog_profile_history"
+    __table_args__ = (
+        Index("ix_dog_profile_history_profile_id", "dog_profile_id"),
+    )
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    dog_profile_id = Column(String(36), nullable=False)
+    source = Column(String(50), nullable=False)
+    source_id = Column(String(255), nullable=False)
+    # When this snapshot was taken — equals the main row's last_updated_at at
+    # the moment of archiving, so you can reconstruct "what was true at time T".
+    archived_at = Column(DateTime, nullable=False)
+    # Live fields — same types as dog_profiles
+    status = Column(String(20), nullable=False)
+    photos = Column(JSON, nullable=False)
+    description = Column(Text, nullable=True)
+    tags = Column(JSON, nullable=False)
+    good_with_dogs = Column(Boolean, nullable=True)
+    good_with_cats = Column(Boolean, nullable=True)
+    good_with_kids = Column(Boolean, nullable=True)
+    house_trained = Column(Boolean, nullable=True)
+    shelter_name = Column(String(255), nullable=True)
+    city = Column(String(100), nullable=True)
+    state = Column(String(10), nullable=True)
+    zip = Column(String(20), nullable=True)
+    listed_at = Column(DateTime, nullable=True)
 
 
 # ---------------------------------------------------------------------------
@@ -117,5 +165,8 @@ class DogProfile(BaseModel):
     description: Optional[str] = None
     tags: list[str] = []
     status: str = "available"  # available | pending | adopted
+    birth_date: Optional[datetime] = None       # dog's date of birth (physical.birthDate)
+    intake_date: Optional[datetime] = None      # when shelter first took the dog in
+    listed_at: Optional[datetime] = None        # when adoption status last changed on PetFinder
     first_seen_at: datetime = Field(default_factory=datetime.utcnow)
     last_updated_at: datetime = Field(default_factory=datetime.utcnow)
