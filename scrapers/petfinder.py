@@ -163,7 +163,7 @@ class PetFinderScraper(BaseScraper):
     SOURCE_NAME = "petfinder"
 
     def _scrape(self, page: Page) -> None:
-        counts = {"fetched": 0, "created": 0, "updated": 0, "skipped": 0, "errors": 0}
+        counts = {"fetched": 0, "created": 0, "updated": 0, "unchanged": 0, "skipped": 0, "errors": 0}
 
         logger.info("Loading listing page: %s", START_URL)
         page.goto(START_URL, wait_until="domcontentloaded", timeout=60_000)
@@ -202,10 +202,11 @@ class PetFinderScraper(BaseScraper):
                     self._random_delay()
 
         logger.info(
-            "Done. fetched=%d created=%d updated=%d skipped=%d errors=%d",
+            "Done. fetched=%d created=%d updated=%d unchanged=%d skipped=%d errors=%d",
             counts["fetched"],
             counts["created"],
             counts["updated"],
+            counts["unchanged"],
             counts["skipped"],
             counts["errors"],
         )
