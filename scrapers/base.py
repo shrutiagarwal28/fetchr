@@ -28,9 +28,10 @@ class BaseScraper:
     START_URL: str = ""
     SOURCE_NAME: str = ""
 
-    def __init__(self, max_results: int = 100, headless: bool = True) -> None:
+    def __init__(self, max_results: int = 100, headless: bool = True, location: str = "") -> None:
         self.max_results = max_results
         self.headless = headless
+        self.location = location
 
     def run(self) -> None:
         """Entry point: set up DB, launch browser, delegate to _scrape()."""

@@ -31,7 +31,6 @@ from scrapers.base import BaseScraper
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://www.petfinder.com"
-START_URL = "https://www.petfinder.com/search/dogs-for-adoption/us/nj/jerseycity/"
 
 # Listing page card selectors — tried in order, first match wins.
 # The href pattern is the most stable since PetFinder dog URLs always contain /dog/
@@ -47,6 +46,24 @@ STATUS_MAP = {
     "pending": "pending",
     "adopted": "adopted",
 }
+
+
+def _build_start_url(location: str) -> str:
+    """
+    Build the PetFinder dog-search URL from a '{state}/{city}' slug.
+
+    Accepts loose input — 'NJ/Jersey City', 'nj/jersey-city', 'nj/jerseycity'
+    all produce the same URL. Spaces and hyphens are stripped from the city
+    segment because PetFinder URLs use compact lowercase slugs (e.g. 'jerseycity').
+    """
+    parts = location.strip("/").split("/", 1)
+    if len(parts) != 2:
+        raise ValueError(
+            f"--location must be '{{state}}/{{city}}', e.g. 'nj/jersey-city'. Got: {location!r}"
+        )
+    state = parts[0].strip().lower()
+    city = parts[1].strip().lower().replace(" ", "").replace("-", "")
+    return f"{BASE_URL}/search/dogs-for-adoption/us/{state}/{city}/"
 
 
 # ---------------------------------------------------------------------------
@@ -165,10 +182,11 @@ class PetFinderScraper(BaseScraper):
     def _scrape(self, page: Page) -> None:
         counts = {"fetched": 0, "created": 0, "updated": 0, "unchanged": 0, "skipped": 0, "errors": 0}
 
-        logger.info("Loading listing page: %s", START_URL)
-        page.goto(START_URL, wait_until="domcontentloaded", timeout=60_000)
+        start_url = _build_start_url(self.location)
+        logger.info("Loading listing page: %s", start_url)
+        page.goto(start_url, wait_until="domcontentloaded", timeout=60_000)
 
-        card_urls = self._collect_card_urls(page)
+        card_urls = self._collect_card_urls(page, start_url)
         card_urls = card_urls[: self.max_results]
         total = len(card_urls)
         logger.info("Found %d dog cards to scrape", total)
@@ -220,7 +238,7 @@ class PetFinderScraper(BaseScraper):
         page.screenshot(path="debug_listing.png")
         return CARD_SELECTORS[-1]
 
-    def _collect_card_urls(self, page: Page) -> list[str]:
+    def _collect_card_urls(self, page: Page, start_url: str) -> list[str]:
         """
         Paginate through listing pages until max_results URLs are collected or
         a page yields no new cards (signals the last page).
@@ -237,7 +255,7 @@ class PetFinderScraper(BaseScraper):
 
         while len(urls) < self.max_results and page_num <= MAX_PAGES:
             if page_num > 1:
-                next_page_url = f"{START_URL}?page={page_num}"
+                next_page_url = f"{start_url}?page={page_num}"
                 logger.info("Navigating to listing page %d", page_num)
                 page.goto(next_page_url, wait_until="domcontentloaded", timeout=60_000)
 
