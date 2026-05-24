@@ -39,7 +39,21 @@ The data pipeline is **Extract → Validate → Upsert**:
 1. `scrapers/petfinder.py` navigates Playwright to the listing page, scrolls to load all cards, collects detail page URLs, then visits each one.
 2. On each detail page it reads the `<script id="__NEXT_DATA__">` JSON blob that Next.js embeds — **not CSS selectors** — to extract all dog fields. This is the critical architectural decision: PetFinder removes `data-test` attributes regularly, but the JSON structure is stable.
 3. Raw data is normalized into a `DogProfile` Pydantic model (`models/dog.py`) which validates types and fills defaults.
-4. `db/connection.py::upsert_dog()` is the only write path. Dedup key is `(source, source_id)`. On re-run, existing rows only get `last_updated_at` bumped.
+4. `db/connection.py` has two write paths: `save_raw_scrape()` saves the unmodified `__NEXT_DATA__` animal blob to `raw_scrapes` before any normalization; `upsert_dog()` writes to `dog_profiles`. Dedup key is `(source, source_id)`. On re-run, if live fields (status, photos, behavior, location) changed, the old values are archived to `dog_profile_history` before the main row is updated. Stable fields (name, breed, age, gender) are never overwritten.
+
+## Call chain
+
+`connection.py` is the DB layer — the scraper calls into it, not the other way around.
+
+```
+python3 main.py scrape ...
+    └─► main.py::_run_scrape()
+            └─► PetFinderScraper.run()              # base.py — browser setup
+                    └─► PetFinderScraper._scrape()        # petfinder.py — scraping loop
+                            ├─► save_raw_scrape()          # connection.py — writes raw_scrapes
+                            └─► upsert_dog()               # connection.py — writes dog_profiles
+                                    └─► _archive_snapshot()    # connection.py — writes dog_profile_history
+```
 
 ## Key data path in `__NEXT_DATA__`
 
@@ -78,4 +92,6 @@ props.pageProps.animal
 | Variable | Default | Purpose |
 |---|---|---|
 | `DB_PATH` | `fetchr.db` | SQLite file location |
+| `JSON_PATH` | `fetchr.json` | JSON export path (written after every scrape run) |
+| `PETFINDER_LOCATION` | `nj/jersey-city` | Search location as `{state}/{city}` — overridden by `--location` CLI arg |
 | `USER_AGENT` | Chrome 124 on macOS | Browser UA string |

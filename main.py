@@ -13,6 +13,8 @@ import argparse
 import logging
 import sys
 
+from config import PETFINDER_LOCATION
+
 # Configure logging before importing scrapers so all modules pick up the level
 logging.basicConfig(
     level=logging.INFO,
@@ -23,14 +25,14 @@ logging.basicConfig(
 logger = logging.getLogger("fetchr")
 
 
-def _run_scrape(source: str, max_results: int, headless: bool) -> None:
+def _run_scrape(source: str, max_results: int, headless: bool, location: str) -> None:
     from scrapers.petfinder import PetFinderScraper
     from scrapers.adoptapet import AdoptAPetScraper
     from db.connection import export_to_json
 
     scrapers = {
-        "petfinder": lambda: PetFinderScraper(max_results=max_results, headless=headless).run(),
-        "adoptapet": lambda: AdoptAPetScraper(max_results=max_results, headless=headless).run(),
+        "petfinder": lambda: PetFinderScraper(max_results=max_results, headless=headless, location=location).run(),
+        "adoptapet": lambda: AdoptAPetScraper(max_results=max_results, headless=headless, location=location).run(),
     }
 
     targets = list(scrapers.keys()) if source == "all" else [source]
@@ -68,11 +70,20 @@ def main() -> None:
         action="store_true",
         help="Run browser in visible (non-headless) mode — helps bypass bot detection",
     )
+    scrape_parser.add_argument(
+        "--location",
+        default=PETFINDER_LOCATION,
+        metavar="STATE/CITY",
+        help=(
+            "Location to search, as '{state}/{city}', e.g. 'nj/jersey-city' or 'ny/new york'. "
+            f"Defaults to PETFINDER_LOCATION env var, currently '{PETFINDER_LOCATION}'."
+        ),
+    )
 
     args = parser.parse_args()
 
     if args.command == "scrape":
-        _run_scrape(args.source, args.max_results, headless=not args.no_headless)
+        _run_scrape(args.source, args.max_results, headless=not args.no_headless, location=args.location)
     else:
         parser.print_help()
         sys.exit(1)

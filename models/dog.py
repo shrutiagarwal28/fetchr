@@ -8,12 +8,13 @@ Two representations live here intentionally:
     (photos, tags) since SQLite has no native array type.
 
 Pattern: Extract → Validate (Pydantic) → Upsert (ORM).
+Classes are ordered to match that pipeline: DogProfile first, then DogORM.
 """
 
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from pydantic import BaseModel, Field
@@ -37,6 +38,47 @@ from sqlalchemy.orm import DeclarativeBase
 
 class Base(DeclarativeBase):
     pass
+
+
+# ---------------------------------------------------------------------------
+# Pydantic schema (validation layer — never bypass this on the way to the DB)
+# ---------------------------------------------------------------------------
+
+class DogProfile(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    source: str
+    source_id: str
+    source_url: str
+    name: str
+    breed_primary: str
+    breed_secondary: Optional[str] = None
+    is_mixed: bool = False
+    age_category: str  # puppy | young | adult | senior
+    age_years_approx: Optional[float] = None
+    size: str          # small | medium | large | xlarge
+    gender: str
+    color: Optional[str] = None
+    good_with_kids: Optional[bool] = None
+    good_with_dogs: Optional[bool] = None
+    good_with_cats: Optional[bool] = None
+    house_trained: Optional[bool] = None
+    special_needs: bool = False
+    energy_level: str = "unknown"  # low | medium | high | unknown
+    shelter_name: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    zip: Optional[str] = None
+    lat: Optional[float] = None
+    lng: Optional[float] = None
+    photos: list[str] = []
+    description: Optional[str] = None
+    tags: list[str] = []
+    status: str = "available"  # available | pending | adopted
+    birth_date: Optional[datetime] = None       # dog's date of birth (physical.birthDate)
+    intake_date: Optional[datetime] = None      # when shelter first took the dog in
+    listed_at: Optional[datetime] = None        # when adoption status last changed on PetFinder
+    first_seen_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
 # ---------------------------------------------------------------------------
@@ -88,6 +130,36 @@ class DogORM(Base):
 
 
 # ---------------------------------------------------------------------------
+# Raw scrape storage
+# ---------------------------------------------------------------------------
+
+class RawScrape(Base):
+    """
+    Append-only record of the exact JSON payload received from each source,
+    saved before any normalization happens.
+
+    If a scraper bug silently drops or mis-maps a field, the raw blob lets
+    you re-process historical data without re-scraping the site.
+    Also useful for schema drift detection: if PetFinder restructures their
+    __NEXT_DATA__, a diff of consecutive raw blobs for the same dog shows
+    exactly what changed.
+
+    One row per scrape run per dog — intentionally append-only.
+    """
+    __tablename__ = "raw_scrapes"
+    __table_args__ = (
+        Index("ix_raw_scrapes_source_id", "source", "source_id"),
+    )
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    source = Column(String(50), nullable=False)
+    source_id = Column(String(255), nullable=False)
+    source_url = Column(Text, nullable=False)
+    scraped_at = Column(DateTime, nullable=False)
+    raw_json = Column(JSON, nullable=False)
+
+
+# ---------------------------------------------------------------------------
 # History / audit table
 # ---------------------------------------------------------------------------
 
@@ -129,44 +201,3 @@ class DogProfileHistory(Base):
     state = Column(String(10), nullable=True)
     zip = Column(String(20), nullable=True)
     listed_at = Column(DateTime, nullable=True)
-
-
-# ---------------------------------------------------------------------------
-# Pydantic schema (validation layer — never bypass this on the way to the DB)
-# ---------------------------------------------------------------------------
-
-class DogProfile(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    source: str
-    source_id: str
-    source_url: str
-    name: str
-    breed_primary: str
-    breed_secondary: Optional[str] = None
-    is_mixed: bool = False
-    age_category: str  # puppy | young | adult | senior
-    age_years_approx: Optional[float] = None
-    size: str          # small | medium | large | xlarge
-    gender: str
-    color: Optional[str] = None
-    good_with_kids: Optional[bool] = None
-    good_with_dogs: Optional[bool] = None
-    good_with_cats: Optional[bool] = None
-    house_trained: Optional[bool] = None
-    special_needs: bool = False
-    energy_level: str = "unknown"  # low | medium | high | unknown
-    shelter_name: Optional[str] = None
-    city: Optional[str] = None
-    state: Optional[str] = None
-    zip: Optional[str] = None
-    lat: Optional[float] = None
-    lng: Optional[float] = None
-    photos: list[str] = []
-    description: Optional[str] = None
-    tags: list[str] = []
-    status: str = "available"  # available | pending | adopted
-    birth_date: Optional[datetime] = None       # dog's date of birth (physical.birthDate)
-    intake_date: Optional[datetime] = None      # when shelter first took the dog in
-    listed_at: Optional[datetime] = None        # when adoption status last changed on PetFinder
-    first_seen_at: datetime = Field(default_factory=datetime.utcnow)
-    last_updated_at: datetime = Field(default_factory=datetime.utcnow)

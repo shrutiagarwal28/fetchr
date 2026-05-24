@@ -434,3 +434,56 @@ Okay, now that I have this data, what do I do if I have to clean it
   run the scraper with --max 25 to verify 
   pagination works. (disable recaps in
   /config)
+-----------------------------
+
+  What was built: A change data capture (CDC) pattern using an audit table.
+
+Pattern name: This is called temporal data modeling — specifically the "history table" variant. The main table always holds the latest state; the history table is append-only.
+
+How it works end-to-end:
+
+Dog is scraped → upsert_dog checks if (source, source_id) exists
+If it exists and nothing in _LIVE_FIELDS changed → bumps last_updated_at, returns "unchanged" (no history row written — no noise)
+If something changed (e.g. status: adoptable → adopted) → old values are snapshotted to dog_profile_history first, then the main row is updated → returns "updated"
+To query the full adoption timeline for a dog:
+
+
+SELECT archived_at, status FROM dog_profile_history WHERE source_id = 'abc-123'
+UNION ALL
+SELECT last_updated_at, status FROM dog_profiles WHERE source_id = 'abc-123'
+ORDER BY archived_at;
+Watch out for: The _has_live_changes comparison uses Python equality. For JSON columns (photos, tags), SQLAlchemy loads them as Python lists — list equality is order-sensitive. If PetFinder returns photos in a different order on re-scrape, it'll trigger a false "changed" and write a history row. This is acceptable for now (extra rows, no data loss), but worth being aware of.
+
+--------------------------------
+
+### Why Separate classes for dog profile and dog ORM ?
+
+The key insight is they have conflicting responsibilities:
+
+Concern	Pydantic	SQLAlchemy
+Validate raw strings	Yes	No
+Generate SQL	No	Yes
+Works without a DB	Yes	No
+Serializable to JSON	Yes (model_dump)	No
+
+If you merged them, you'd either pollute your validation logic with DB concerns or lose the ability to validate data before touching the DB at all.
+
+<mark>The data flow is: scraper → DogProfile (validate) → DogORM (persist)</mark>, which is the Repository Pattern with a validation gateway in front. You can see the handoff at connection.py:108 where profile.model_dump() converts the validated Pydantic object directly into the ORM row.
+
+Interview angle: "I separate the validation contract from the persistence contract because they evolve independently — the scraper schema can change without touching the DB schema, and vice versa."
+
+--------------------------------
+
+### Fetchr call chain
+
+`connection.py` is the DB layer — the scraper calls into it, not the other way around.
+
+```
+python3 main.py scrape ...
+    └─► main.py::_run_scrape()
+            └─► PetFinderScraper.run()              # base.py — browser setup
+                    └─► PetFinderScraper._scrape()        # petfinder.py — scraping loop
+                            ├─► save_raw_scrape()          # connection.py — writes raw_scrapes
+                            └─► upsert_dog()               # connection.py — writes dog_profiles
+                                    └─► _archive_snapshot()    # connection.py — writes dog_profile_history
+```
