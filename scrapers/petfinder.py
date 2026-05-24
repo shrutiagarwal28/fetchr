@@ -23,8 +23,9 @@ from typing import Any, Optional
 from urllib.parse import urljoin
 
 from playwright.sync_api import Page, TimeoutError as PWTimeoutError
+from sqlalchemy.orm import Session as SessionType
 
-from db.connection import Session, upsert_dog
+from db.connection import Session, save_raw_scrape, upsert_dog
 from models.dog import DogProfile
 from scrapers.base import BaseScraper
 
@@ -194,7 +195,7 @@ class PetFinderScraper(BaseScraper):
         with Session() as session:
             for idx, detail_url in enumerate(card_urls, start=1):
                 try:
-                    profile = self._scrape_detail_page(page, detail_url)
+                    profile = self._scrape_detail_page(page, detail_url, session)
                     if profile is None:
                         counts["errors"] += 1
                         continue
@@ -322,7 +323,9 @@ class PetFinderScraper(BaseScraper):
                 new_urls.append(full_url)
         return new_urls
 
-    def _scrape_detail_page(self, page: Page, url: str) -> Optional[DogProfile]:
+    def _scrape_detail_page(
+        self, page: Page, url: str, session: SessionType
+    ) -> Optional[DogProfile]:
         """
         Navigate to a dog detail page and build a DogProfile from __NEXT_DATA__ JSON.
         Returns None on hard failure so the caller can count the error without crashing.
@@ -338,15 +341,16 @@ class PetFinderScraper(BaseScraper):
             logger.warning("No __NEXT_DATA__ animal found at %s", url)
             return None
 
-        logger.info("residency object: %s", animal.get("residency"))
-        logger.info("physical.birthDate: %s", (animal.get("physical") or {}).get("birthDate"))
-
         # --- Identity ---
         source_id = animal.get("animalId") or _extract_source_id(url)
         name = (animal.get("animalName") or "").strip()
         if not name:
             logger.warning("No name at %s — skipping", url)
             return None
+
+        # Save raw blob before any normalization — insurance against scraper bugs.
+        # Failure here is logged but never raises so the upsert path is unaffected.
+        save_raw_scrape(session, self.SOURCE_NAME, source_id, url, animal)
 
         # --- Physical attributes (animal.physical) ---
         physical: dict = animal.get("physical") or {}
@@ -370,6 +374,7 @@ class PetFinderScraper(BaseScraper):
         color = color_obj.get("primary") or None
 
         special_needs = bool(physical.get("specialNeeds"))
+        birth_date = _parse_iso_dt(physical.get("birthDate"))
 
         # --- Behavior / compatibility (animal.behavior) ---
         behavior: dict = animal.get("behavior") or {}
@@ -411,10 +416,12 @@ class PetFinderScraper(BaseScraper):
         # --- Description ---
         description = (animal.get("description") or "").strip() or None
 
-        # --- Adoption status (animal.residency) ---
+        # --- Adoption status + listing dates (animal.residency) ---
         residency: dict = animal.get("residency") or {}
         raw_status = (residency.get("adoptionStatus") or "").lower()
         status = STATUS_MAP.get(raw_status, "available")
+        intake_date = _parse_iso_dt(residency.get("intakeDate"))
+        listed_at = _parse_iso_dt(residency.get("publishedAt"))
 
         return DogProfile(
             source=self.SOURCE_NAME,
@@ -442,4 +449,7 @@ class PetFinderScraper(BaseScraper):
             description=description,
             tags=tags,
             status=status,
+            birth_date=birth_date,
+            intake_date=intake_date,
+            listed_at=listed_at,
         )

@@ -16,14 +16,14 @@ import logging
 import os
 import tempfile
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session as SessionType
 
 from config import DB_PATH, JSON_PATH
-from models.dog import Base, DogORM, DogProfile, DogProfileHistory
+from models.dog import Base, DogORM, DogProfile, DogProfileHistory, RawScrape
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,32 @@ def create_tables() -> None:
     """Create all tables if they don't already exist. Safe to call on every run."""
     Base.metadata.create_all(engine)
     logger.info("Database ready at %s", DB_PATH)
+
+
+def save_raw_scrape(
+    session: SessionType, source: str, source_id: str, url: str, raw: dict
+) -> None:
+    """
+    Append the raw JSON payload from a scrape to raw_scrapes.
+
+    Called before any normalization so the blob reflects exactly what the
+    source sent. One row per scrape run — intentionally not deduplicated.
+    Commit failures are logged and swallowed so a raw-save error never
+    blocks the main upsert path.
+    """
+    try:
+        session.add(RawScrape(
+            id=str(uuid.uuid4()),
+            source=source,
+            source_id=source_id,
+            source_url=url,
+            scraped_at=datetime.now(timezone.utc).replace(tzinfo=None),
+            raw_json=raw,
+        ))
+        session.commit()
+    except Exception:
+        session.rollback()
+        logger.exception("Failed to save raw scrape source_id=%s", source_id)
 
 
 # Fields that reflect the live state of a listing — updated on re-scrape
@@ -94,14 +120,14 @@ def upsert_dog(session: SessionType, profile: DogProfile) -> str:
 
     if existing is not None:
         if not _has_live_changes(existing, profile):
-            existing.last_updated_at = datetime.utcnow()
+            existing.last_updated_at = datetime.now(timezone.utc)
             session.commit()
             return "unchanged"
 
         _archive_snapshot(session, existing)
         for field in _LIVE_FIELDS:
             setattr(existing, field, getattr(profile, field))
-        existing.last_updated_at = datetime.utcnow()
+        existing.last_updated_at = datetime.now(timezone.utc)
         session.commit()
         return "updated"
 
