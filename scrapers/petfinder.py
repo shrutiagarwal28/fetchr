@@ -120,7 +120,13 @@ def _normalize_age(raw: str) -> tuple[str, Optional[float]]:
         return "young", None
     if "senior" in raw:
         return "senior", None
-    return "adult", None
+
+    if not raw:
+        return "unknown", None
+
+    # Pass the raw value through so no data is silently dropped
+    logger.warning("Unrecognized age string %r — storing as-is", raw)
+    return raw, None
 
 
 def _normalize_size(raw: str) -> str:
