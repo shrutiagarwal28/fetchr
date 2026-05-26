@@ -10,7 +10,7 @@ The single underscore prefix (`_`) on a function or variable name is a **convent
 
 When you design a module, you're implicitly defining two layers:
 
-- **Public** — things other modules or callers are meant to use. Named normally: `run()`, `export()`, `main()`.
+- **Public** — things other modules or callers are meant to use. Named normally: `run()`, `export()`, `main()`
 - **Private** — helpers that exist to serve the public functions, not to be called directly. Named with a leading underscore: `_build_url()`, `_normalize_age()`, `_run_scrape()`.
 
 ### Why bother if Python doesn't enforce it?
