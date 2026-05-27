@@ -47,36 +47,128 @@ class Base(DeclarativeBase):
 class DogProfile(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     source: str
-    source_id: str
+    source_id: str          # animalId from PetFinder
     source_url: str
-    name: str
+    name: str               # animalName
+    animal_type: Optional[str] = None              # "Dog" — always Dog for us but stored for completeness
+    microchip_id: Optional[str] = None             # microchipId
+    internal_notes: Optional[str] = None           # internalNotes (org-internal, often null)
+    match_label: Optional[str] = None              # matchLabel
+    out_of_town: Optional[bool] = None             # outOfTown
+    import_updates_enabled: Optional[bool] = None  # importUpdatesEnabled
+    import_deletes_enabled: Optional[bool] = None  # importDeletesEnabled
+
+    # --- Physical ---
     breed_primary: str
     breed_secondary: Optional[str] = None
     is_mixed: bool = False
-    age_category: str  # puppy | young | adult | senior
+    age_category: str           # our normalized label: puppy | young | adult | senior | unknown
     age_years_approx: Optional[float] = None
-    size: str          # small | medium | large | xlarge
-    gender: str
-    color: Optional[str] = None
-    good_with_kids: Optional[bool] = None
-    good_with_dogs: Optional[bool] = None
-    good_with_cats: Optional[bool] = None
-    house_trained: Optional[bool] = None
-    special_needs: bool = False
-    energy_level: str = "unknown"  # low | medium | high | unknown
-    shelter_name: Optional[str] = None
-    city: Optional[str] = None
-    state: Optional[str] = None
-    zip: Optional[str] = None
-    lat: Optional[float] = None
-    lng: Optional[float] = None
-    photos: list[str] = []
+    age_label: Optional[str] = None         # PetFinder's own display label e.g. "Adult"
+    age_range_label: Optional[str] = None   # PetFinder's range string e.g. "(3-8 years)"
+    size: str                   # our normalized label: small | medium | large | xlarge
+    weight_min: Optional[int] = None        # lbs, from size.range.min
+    weight_max: Optional[int] = None        # lbs, from size.range.max
+    weight_range_label: Optional[str] = None  # e.g. "26-60 lbs"
+    gender: str                             # lowercased from physical.sex
+    color: Optional[str] = None             # physical.color.primary
+    color_secondary: Optional[str] = None   # physical.color.secondary
+    color_tertiary: Optional[str] = None    # physical.color.tertiary
+    coat_length: Optional[str] = None       # physical.coatLength
+    declawed: Optional[bool] = None         # physical.declawed (cats mostly, but stored)
+    species: Optional[str] = None           # physical.species — always "Dog" for us
+    spayed_neutered: Optional[bool] = None  # physical.spayedNeutered
+    vaccinated: Optional[bool] = None       # physical.vaccinated
+    special_needs: bool = False             # physical.specialNeeds
+    special_needs_notes: Optional[str] = None  # physical.specialNeedsNotes
+    birth_date: Optional[datetime] = None   # physical.birthDate
+
+    # --- Behavior ---
+    house_trained: Optional[bool] = None            # behavior.houseTrained (Yes/No/Unknown → bool)
+    activity_level: Optional[str] = None            # behavior.activityLevel
+    requires_fenced_yard: Optional[bool] = None     # behavior.requiresFencedYard
+    knows_basic_commands: Optional[bool] = None     # behavior.knowsBasicCommands
+    behavior_other_animals: Optional[str] = None    # behavior.interactionsOtherAnimals — free-text field, distinct from interactions.otherAnimals
+    good_with_kids: Optional[bool] = None           # derived from interactions.childrenUnder8 + children8AndUp
+    good_with_dogs: Optional[bool] = None           # behavior.interactions.dogs
+    good_with_cats: Optional[bool] = None           # behavior.interactions.cats
+    good_with_other_animals: Optional[bool] = None  # behavior.interactions.otherAnimals (Yes/No/Unknown → bool)
+    personality_traits: list[str] = []              # behavior.personalityTraits
+
+    # --- Location (foster/listing address, not org HQ) ---
+    location_id: Optional[str] = None          # _location.locationId
+    location_name: Optional[str] = None        # _location.locationName
+    location_type: Optional[str] = None        # _location.locationType e.g. "Default Location"
+    location_contact_name: Optional[str] = None  # _location.contactName
+    location_email: Optional[str] = None       # _location.email
+    location_phone: Optional[str] = None       # _location.phone
+    is_appt_only: Optional[bool] = None        # _location.isApptOnly
+    is_map_hidden: Optional[bool] = None       # _location.isMapHidden
+    is_public_location: Optional[bool] = None  # _location.isPublic
+    private_address: Optional[bool] = None     # _location.privateAddress
+    location_street: Optional[str] = None      # _location.address.street
+    location_street2: Optional[str] = None     # _location.address.street2
+    city: Optional[str] = None                 # _location.address.city
+    state: Optional[str] = None                # _location.address.state
+    zip: Optional[str] = None                  # _location.address.postalCode
+    country: Optional[str] = None              # _location.address.country
+    lat: Optional[float] = None                # _location.address.latitude (often null)
+    lng: Optional[float] = None                # _location.address.longitude (often null)
+
+    # --- Organization ---
+    shelter_name: Optional[str] = None         # _organization.organizationName
+    org_id: Optional[str] = None               # _organization.organizationId
+    org_type: Optional[str] = None             # _organization.organizationType e.g. "Rescue Group / Foster-Based"
+    org_custom_url_alias: Optional[str] = None # _organization.customUrlAlias
+    org_website: Optional[str] = None          # _organization.website
+    org_social_urls: list[str] = []            # _organization.socialUrl
+    org_mission_statement: Optional[str] = None  # _organization.missionStatement
+    org_onsite_vet: Optional[bool] = None      # _organization.onsiteVet
+    org_supports_rehome: Optional[bool] = None # _organization.supportsRehome
+    org_spay_neuter_policy: Optional[str] = None  # _organization.spayNeuterPolicy
+    org_special_services: list[str] = []       # _organization.specialServices
+    org_adoption_url: Optional[str] = None     # _organization.adoption.adoptionApplUrl
+    org_adoption_fee_min: Optional[int] = None # _organization.adoption.adoptionFeeMin
+    org_adoption_fee_max: Optional[int] = None # _organization.adoption.adoptionFeeMax
+    org_annual_adoptions: Optional[int] = None # _organization.adoption.annualAdoptions
+    org_annual_intake: Optional[int] = None    # _organization.adoption.annualIntake
+    org_foster_count: Optional[int] = None     # _organization.fosterCount
+    org_employee_count: Optional[int] = None   # _organization.employeeCount
+    org_volunteer_count: Optional[int] = None  # _organization.volunteerCount
+    org_display_id: Optional[str] = None       # _organization.displayId e.g. "NJ708"
+
+    # --- Contact ---
+    contact_id: Optional[str] = None           # _contact.contactId
+    contact_email: Optional[str] = None        # _contact.email
+    contact_first_name: Optional[str] = None   # _contact.firstName
+    contact_last_name: Optional[str] = None    # _contact.lastName
+    contact_phone: Optional[str] = None        # _contact.phone
+
+    # --- Media ---
+    photos: list[str] = []          # image URLs only (quick access list)
+    media_records: list[dict] = []  # full _media[] objects — every field PetFinder sends
+
+    # --- Listing content ---
     description: Optional[str] = None
-    tags: list[str] = []
-    status: str = "available"  # available | pending | adopted
-    birth_date: Optional[datetime] = None       # dog's date of birth (physical.birthDate)
-    intake_date: Optional[datetime] = None      # when shelter first took the dog in
-    listed_at: Optional[datetime] = None        # when adoption status last changed on PetFinder
+    extended_description: Optional[str] = None   # extendedDescription
+    petfinder_notes: Optional[str] = None         # top-level `notes` field
+    tags: list[str] = []                          # top-level `tags` (distinct from personality_traits)
+    petfinder_url: Optional[str] = None           # publicUrl.url (relative)
+    sponsor_a_pet_url: Optional[str] = None       # sponsorAPetUrl.url
+
+    # --- Adoption / status ---
+    status: str = "available"               # our normalized label: available | pending | adopted
+    adoption_fee: Optional[int] = None      # residency.adoptionFee
+    adoption_fee_waived: Optional[bool] = None   # residency.adoptionFeeWaived
+    display_adoption_fee: Optional[bool] = None  # residency.displayAdoptionFee
+    adoption_date: Optional[datetime] = None     # residency.adoptionDate
+    adoption_status_change_date: Optional[datetime] = None  # residency.adoptionStatusChangeDate
+    intake_date: Optional[datetime] = None       # residency.intakeDate
+    intake_type: Optional[str] = None            # residency.intakeType
+    transfer_date: Optional[datetime] = None     # residency.transferDate
+    transfer_from_org_id: Optional[str] = None   # residency.transferFromOrganizationId
+    listed_at: Optional[datetime] = None         # residency.publishedAt
+
     first_seen_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     last_updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -97,34 +189,125 @@ class DogORM(Base):
     source_id = Column(String(255), nullable=False)
     source_url = Column(Text, nullable=False)
     name = Column(String(255), nullable=False)
+    animal_type = Column(String(50), nullable=True)
+    microchip_id = Column(String(255), nullable=True)
+    internal_notes = Column(Text, nullable=True)
+    match_label = Column(String(100), nullable=True)
+    out_of_town = Column(Boolean, nullable=True)
+    import_updates_enabled = Column(Boolean, nullable=True)
+    import_deletes_enabled = Column(Boolean, nullable=True)
+
+    # Physical
     breed_primary = Column(String(255), nullable=False)
     breed_secondary = Column(String(255), nullable=True)
     is_mixed = Column(Boolean, default=False, nullable=False)
     age_category = Column(String(20), nullable=False)
     age_years_approx = Column(Float, nullable=True)
+    age_label = Column(String(50), nullable=True)
+    age_range_label = Column(String(50), nullable=True)
     size = Column(String(20), nullable=False)
+    weight_min = Column(Float, nullable=True)
+    weight_max = Column(Float, nullable=True)
+    weight_range_label = Column(String(50), nullable=True)
     gender = Column(String(20), nullable=False)
     color = Column(String(100), nullable=True)
+    color_secondary = Column(String(100), nullable=True)
+    color_tertiary = Column(String(100), nullable=True)
+    coat_length = Column(String(50), nullable=True)
+    declawed = Column(Boolean, nullable=True)
+    species = Column(String(50), nullable=True)
+    spayed_neutered = Column(Boolean, nullable=True)
+    vaccinated = Column(Boolean, nullable=True)
+    special_needs = Column(Boolean, default=False, nullable=False)
+    special_needs_notes = Column(Text, nullable=True)
+    birth_date = Column(DateTime, nullable=True)
+
+    # Behavior
+    house_trained = Column(Boolean, nullable=True)
+    activity_level = Column(String(50), nullable=True)
+    requires_fenced_yard = Column(Boolean, nullable=True)
+    knows_basic_commands = Column(Boolean, nullable=True)
+    behavior_other_animals = Column(Text, nullable=True)
     good_with_kids = Column(Boolean, nullable=True)
     good_with_dogs = Column(Boolean, nullable=True)
     good_with_cats = Column(Boolean, nullable=True)
-    house_trained = Column(Boolean, nullable=True)
-    special_needs = Column(Boolean, default=False, nullable=False)
-    energy_level = Column(String(20), default="unknown", nullable=False)
-    shelter_name = Column(String(255), nullable=True)
+    good_with_other_animals = Column(Boolean, nullable=True)
+    personality_traits = Column(JSON, default=list, nullable=False)
+
+    # Location
+    location_id = Column(String(36), nullable=True)
+    location_name = Column(String(255), nullable=True)
+    location_type = Column(String(100), nullable=True)
+    location_contact_name = Column(String(255), nullable=True)
+    location_email = Column(String(255), nullable=True)
+    location_phone = Column(String(50), nullable=True)
+    is_appt_only = Column(Boolean, nullable=True)
+    is_map_hidden = Column(Boolean, nullable=True)
+    is_public_location = Column(Boolean, nullable=True)
+    private_address = Column(Boolean, nullable=True)
+    location_street = Column(Text, nullable=True)
+    location_street2 = Column(Text, nullable=True)
     city = Column(String(100), nullable=True)
     state = Column(String(10), nullable=True)
     zip = Column(String(20), nullable=True)
+    country = Column(String(10), nullable=True)
     lat = Column(Float, nullable=True)
     lng = Column(Float, nullable=True)
-    # Lists stored as JSON — SQLite has no native array type
+
+    # Organization
+    shelter_name = Column(String(255), nullable=True)
+    org_id = Column(String(36), nullable=True)
+    org_type = Column(String(100), nullable=True)
+    org_custom_url_alias = Column(String(255), nullable=True)
+    org_website = Column(Text, nullable=True)
+    org_social_urls = Column(JSON, default=list, nullable=False)
+    org_mission_statement = Column(Text, nullable=True)
+    org_onsite_vet = Column(Boolean, nullable=True)
+    org_supports_rehome = Column(Boolean, nullable=True)
+    org_spay_neuter_policy = Column(Text, nullable=True)
+    org_special_services = Column(JSON, default=list, nullable=False)
+    org_adoption_url = Column(Text, nullable=True)
+    org_adoption_fee_min = Column(Float, nullable=True)
+    org_adoption_fee_max = Column(Float, nullable=True)
+    org_annual_adoptions = Column(Float, nullable=True)
+    org_annual_intake = Column(Float, nullable=True)
+    org_foster_count = Column(Float, nullable=True)
+    org_employee_count = Column(Float, nullable=True)
+    org_volunteer_count = Column(Float, nullable=True)
+    org_display_id = Column(String(50), nullable=True)
+
+    # Contact
+    contact_id = Column(String(36), nullable=True)
+    contact_email = Column(String(255), nullable=True)
+    contact_first_name = Column(String(255), nullable=True)
+    contact_last_name = Column(String(255), nullable=True)
+    contact_phone = Column(String(50), nullable=True)
+
+    # Media
     photos = Column(JSON, default=list, nullable=False)
+    media_records = Column(JSON, default=list, nullable=False)
+
+    # Listing content
     description = Column(Text, nullable=True)
+    extended_description = Column(Text, nullable=True)
+    petfinder_notes = Column(Text, nullable=True)
     tags = Column(JSON, default=list, nullable=False)
+    petfinder_url = Column(Text, nullable=True)
+    sponsor_a_pet_url = Column(Text, nullable=True)
+
+    # Adoption / status
     status = Column(String(20), default="available", nullable=False)
-    birth_date = Column(DateTime, nullable=True)
+    adoption_fee = Column(Float, nullable=True)
+    adoption_fee_waived = Column(Boolean, nullable=True)
+    display_adoption_fee = Column(Boolean, nullable=True)
+    adoption_date = Column(DateTime, nullable=True)
+    adoption_status_change_date = Column(DateTime, nullable=True)
     intake_date = Column(DateTime, nullable=True)
+    intake_type = Column(String(50), nullable=True)
+    transfer_date = Column(DateTime, nullable=True)
+    transfer_from_org_id = Column(String(36), nullable=True)
     listed_at = Column(DateTime, nullable=True)
+
     first_seen_at = Column(DateTime, nullable=False)
     last_updated_at = Column(DateTime, nullable=False)
 
@@ -190,12 +373,21 @@ class DogProfileHistory(Base):
     # Live fields — same types as dog_profiles
     status = Column(String(20), nullable=False)
     photos = Column(JSON, nullable=False)
+    media_records = Column(JSON, nullable=False)
     description = Column(Text, nullable=True)
+    extended_description = Column(Text, nullable=True)
     tags = Column(JSON, nullable=False)
+    personality_traits = Column(JSON, nullable=False)
     good_with_dogs = Column(Boolean, nullable=True)
     good_with_cats = Column(Boolean, nullable=True)
     good_with_kids = Column(Boolean, nullable=True)
+    good_with_other_animals = Column(Boolean, nullable=True)
     house_trained = Column(Boolean, nullable=True)
+    activity_level = Column(String(50), nullable=True)
+    requires_fenced_yard = Column(Boolean, nullable=True)
+    vaccinated = Column(Boolean, nullable=True)
+    adoption_fee = Column(Float, nullable=True)
+    adoption_fee_waived = Column(Boolean, nullable=True)
     shelter_name = Column(String(255), nullable=True)
     city = Column(String(100), nullable=True)
     state = Column(String(10), nullable=True)
