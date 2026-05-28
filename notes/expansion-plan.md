@@ -86,8 +86,8 @@ At commercial scale, scrapers break silently. Needed from day one:
 
 ## Build Priority
 
-1. **Add raw JSON storage** — cheapest insurance against scraper bugs
-2. **Switch to Postgres** — unblocks everything downstream
+1. ~~**Add raw JSON storage**~~ ✓ Done — `raw_scrapes` table exists in `db/connection.py`
+2. **Switch to Postgres** ← current sprint — unblocks everything downstream
 3. **Add a second scraper source** — proves the multi-source abstraction works before investing in the queue
 4. **Add Celery + Redis** — only after the multi-source pattern is solid
 5. **Add the features table** — when the ML side defines what features it needs

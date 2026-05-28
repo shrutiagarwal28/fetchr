@@ -1,0 +1,378 @@
+{
+  "animalId": "7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8",
+  "animalName": "Sage",
+  "animalType": "Dog",
+  "description": "Meet Sage!  She is sweet 1 year old, 48 pound mixed breed. Named after Jersey City's own Sage Veterinary Center, Sage's journey began in a tough spot. She was found tied to a pole in Queens, New York, with an uncertain past. A kind hearted Good Samaritan brought her to safety, and now she's on her way to a better life.\n\nSage absolutely adores everyone she meets, people are truly her favorite. She's incredibly sweet, affectionate, and always eager to be loved (and to give love right back). She LOVES cuddling and being next to you on the couch is her favorite spot!\n\nSage is crate trained, house trained, and walks beautifully on leash, making her an easy and joyful companion. \n\nDespite her rough start, Sage is ready for a fresh beginning. Could you be the one to help Sage continue her journey and finally get the forever home she deserves? This special girl can't wait to meet you! \n\nSage's is microchipped, spayed, and up to date on all core vaccines.\n\nWant to learn more about Sage?\n Start by applying here: https://www.shelterluv.com/matchme/adopt/SSRD/Dog\n Check out our FAQ: https://seespotrescued.org/adoption-application\n Follow us on Instagram: @seespotrescued\n\nPlease note: See Spot Rescued cannot guarantee the breed, size, temperament, or age of any dog.",
+  "extendedDescription": null,
+  "internalNotes": null,
+  "microchipId": null,
+  "primaryPhotoId": null,
+  "notes": "212166407",
+  "tags": null,
+  "importUpdatesEnabled": null,
+  "importDeletesEnabled": null,
+  "matchLabel": null,
+  "distance": null,
+  "outOfTown": null,
+  "organization": {
+    "contactId": null,
+    "__typename": "AnimalOrganizationResponse"
+  },
+  "_organization": {
+    "organizationName": "See Spot Rescued",
+    "organizationType": "Rescue Group / Foster-Based",
+    "customUrlAlias": "seespotrescued",
+    "organizationTypeOther": null,
+    "displayId": "NJ708",
+    "taxId": null,
+    "primaryPhotoId": null,
+    "notes": null,
+    "medicalCareProvided": null,
+    "missionStatement": "See Spot Rescued is a 501(c)3 non profit all volunteer rescue organization. We’re a foster based rescue, so every dog in our care lives in a nurturing home, surrounded by love and support, until they’re adopted.\n\nOur mission is simple: every dog deserves a second chance. We rescue dogs from high kill shelters in North Carolina, West Virginia, Texas, and New York. Once a dog is in our care, they never return to a shelter.\n\nWhile in foster care, dogs are spayed or neutered, vaccinated, and microchipped. We focus on making the best possible match between the dog and their future family, ensuring a lifelong bond built on love.\n\nAt SSR, we put each dogs needs first, our goal is to find them a permanent, loving home where they will be cherished forever.",
+    "onsiteVet": false,
+    "rehomeProgram": null,
+    "supportsRehome": false,
+    "spayNeuterPolicy": null,
+    "spayNeuterPolicyReason": null,
+    "specialServices": [],
+    "exportApi": true,
+    "exportPartners": true,
+    "director": "Director",
+    "employeeCount": 0,
+    "volunteerCount": 0,
+    "fosterCount": 0,
+    "website": "https://seespotrescued.org/",
+    "otherPlatforms": [],
+    "animalTypes": [
+      "2"
+    ],
+    "socialUrl": [
+      "https://www.instagram.com/seespotrescued/",
+      "http://www.youtube.com/c/SeeSpotRescued"
+    ],
+    "deactivated": null,
+    "deactivationReason": null,
+    "locked": null,
+    "lockedReason": null,
+    "organizationId": "4fe43bd9-de59-4f27-ba55-d487edc53438",
+    "primaryContactId": "c6d41dc7-b16d-4dae-98ab-1194a08edb56",
+    "primaryLocationId": "7ff6dd6d-09d1-43ed-b881-eae046dc4bef",
+    "primaryLocation": {
+      "organizationId": "4fe43bd9-de59-4f27-ba55-d487edc53438",
+      "locationName": "See Spot Rescued",
+      "contactName": null,
+      "phone": "",
+      "email": "woof@seespotrescued.com",
+      "isApptOnly": false,
+      "isMapHidden": true,
+      "isPublic": false,
+      "locationType": "Default Location",
+      "privateAddress": true,
+      "locationId": "7ff6dd6d-09d1-43ed-b881-eae046dc4bef",
+      "hasEmail": true,
+      "address": {
+        "street": null,
+        "street2": null,
+        "city": "Jersey City",
+        "state": "NJ",
+        "postalCode": "07302",
+        "country": "US",
+        "latitude": null,
+        "longitude": null,
+        "__typename": "AddressResponse"
+      },
+      "hours": {
+        "sunday": {
+          "open": null,
+          "close": null,
+          "notes": "",
+          "isOpen": null,
+          "__typename": "ScheduleResponse"
+        },
+        "monday": {
+          "open": null,
+          "close": null,
+          "notes": "",
+          "isOpen": null,
+          "__typename": "ScheduleResponse"
+        },
+        "tuesday": {
+          "open": null,
+          "close": null,
+          "notes": "",
+          "isOpen": null,
+          "__typename": "ScheduleResponse"
+        },
+        "wednesday": {
+          "open": null,
+          "close": null,
+          "notes": "",
+          "isOpen": null,
+          "__typename": "ScheduleResponse"
+        },
+        "thursday": {
+          "open": null,
+          "close": null,
+          "notes": "",
+          "isOpen": null,
+          "__typename": "ScheduleResponse"
+        },
+        "friday": {
+          "open": null,
+          "close": null,
+          "notes": "",
+          "isOpen": null,
+          "__typename": "ScheduleResponse"
+        },
+        "saturday": {
+          "open": null,
+          "close": null,
+          "notes": "",
+          "isOpen": null,
+          "__typename": "ScheduleResponse"
+        },
+        "__typename": "HoursResponse"
+      },
+      "__typename": "LocationResponse"
+    },
+    "logo": null,
+    "publicUrl": {
+      "url": "member/us/nj/jersey-city/see-spot-rescued-nj708",
+      "__typename": "PublicUrl"
+    },
+    "mailingAddress": null,
+    "adoption": {
+      "adoptionApplUrl": "https://seespotrescued.org/available-dogs",
+      "adoptionFeeMax": 0,
+      "adoptionFeeMin": 0,
+      "adoptionPolicies": null,
+      "annualAdoptions": 0,
+      "annualFosters": null,
+      "annualIntake": 0,
+      "__typename": "AdoptionDataResponse"
+    },
+    "__typename": "OrganizationResponse"
+  },
+  "_contact": {
+    "contactId": "c6d41dc7-b16d-4dae-98ab-1194a08edb56",
+    "email": null,
+    "firstName": null,
+    "lastName": null,
+    "phone": null,
+    "hasEmail": null,
+    "__typename": "ContactResponse"
+  },
+  "_location": {
+    "organizationId": "4fe43bd9-de59-4f27-ba55-d487edc53438",
+    "locationName": "See Spot Rescued",
+    "contactName": null,
+    "phone": "",
+    "email": "woof@seespotrescued.com",
+    "isApptOnly": false,
+    "isMapHidden": true,
+    "isPublic": false,
+    "locationType": "Default Location",
+    "privateAddress": true,
+    "locationId": "7ff6dd6d-09d1-43ed-b881-eae046dc4bef",
+    "hasEmail": true,
+    "address": {
+      "street": null,
+      "street2": null,
+      "city": "Jersey City",
+      "state": "NJ",
+      "postalCode": "07302",
+      "country": "US",
+      "__typename": "AddressResponse"
+    },
+    "__typename": "LocationResponse"
+  },
+  "physical": {
+    "birthDate": "2024-10-08T00:00:00.000Z",
+    "coatLength": null,
+    "declawed": null,
+    "sex": "Female",
+    "species": "Dog",
+    "spayedNeutered": true,
+    "specialNeeds": null,
+    "specialNeedsNotes": null,
+    "vaccinated": true,
+    "breed": {
+      "primary": "Mixed Breed",
+      "secondary": null,
+      "mixed": null,
+      "__typename": "AnimalBreedResponse"
+    },
+    "color": {
+      "primary": "Black",
+      "secondary": null,
+      "tertiary": null,
+      "__typename": "AnimalColorResponse"
+    },
+    "size": {
+      "label": "Medium",
+      "range": {
+        "min": 26,
+        "max": 60,
+        "label": "26-60 lbs",
+        "__typename": "AnimalSizeRange"
+      },
+      "__typename": "AnimalSizeResponse"
+    },
+    "age": {
+      "value": "Adult",
+      "label": "Adult",
+      "rangeLabel": "(3-8 years)",
+      "__typename": "AnimalAgeResponse"
+    },
+    "__typename": "AnimalPhysicalAttributesResponse"
+  },
+  "_media": [
+    {
+      "animalId": "7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8",
+      "mediaId": "32366c56-686f-4c47-b56a-5c7fc49c00c6",
+      "mediaFormat": "jpeg",
+      "mediaStatus": "COMPLETE",
+      "s3Uri": "s3://npus-pr-petfusbbc-pdp-media-service-public-use1-sss/animal/7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/image/32366c56-686f-4c47-b56a-5c7fc49c00c6.jpg",
+      "s3Url": "https://npus-pr-petfusbbc-pdp-media-service-public-use1-sss.s3.amazonaws.com/animal/7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/image/32366c56-686f-4c47-b56a-5c7fc49c00c6.jpg",
+      "mimeType": "image/jpeg",
+      "originalUrl": "dbw3zep4prcju.cloudfront.net/animal/7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/image/32366c56-686f-4c47-b56a-5c7fc49c00c6.jpg?versionId=ROlpHiaBSkq81fiyMPmT8fI8I4Ia1pYN",
+      "publicUrl": "dbw3zep4prcju.cloudfront.net/animal/7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/image/32366c56-686f-4c47-b56a-5c7fc49c00c6.jpg?versionId=ROlpHiaBSkq81fiyMPmT8fI8I4Ia1pYN",
+      "originalFilename": "12520ee8964649bc24b1dc62cb1c478b.jpg",
+      "position": null,
+      "mediaUrl": null,
+      "thumbnailUrl": null,
+      "mediaIndex": null,
+      "__typename": "MediaRecord"
+    },
+    {
+      "animalId": "7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8",
+      "mediaId": "6ab5caf0-fd7b-4f7f-b24c-7eab4b1fa6cf",
+      "mediaFormat": "jpeg",
+      "mediaStatus": "COMPLETE",
+      "s3Uri": "s3://npus-pr-petfusbbc-pdp-media-service-public-use1-sss/animal/7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/image/6ab5caf0-fd7b-4f7f-b24c-7eab4b1fa6cf.jpg",
+      "s3Url": "https://npus-pr-petfusbbc-pdp-media-service-public-use1-sss.s3.amazonaws.com/animal/7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/image/6ab5caf0-fd7b-4f7f-b24c-7eab4b1fa6cf.jpg",
+      "mimeType": "image/jpeg",
+      "originalUrl": "dbw3zep4prcju.cloudfront.net/animal/7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/image/6ab5caf0-fd7b-4f7f-b24c-7eab4b1fa6cf.jpg?versionId=M9ROZY.j7isfEJEpc2JqCBk3qVc1ujrD",
+      "publicUrl": "dbw3zep4prcju.cloudfront.net/animal/7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/image/6ab5caf0-fd7b-4f7f-b24c-7eab4b1fa6cf.jpg?versionId=M9ROZY.j7isfEJEpc2JqCBk3qVc1ujrD",
+      "originalFilename": "afd3eee058c8af7661edad664d4d73f7.jpg",
+      "position": null,
+      "mediaUrl": null,
+      "thumbnailUrl": null,
+      "mediaIndex": null,
+      "__typename": "MediaRecord"
+    },
+    {
+      "animalId": "7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8",
+      "mediaId": "d3088ae2-3542-49c2-a314-063646fecece",
+      "mediaFormat": "jpeg",
+      "mediaStatus": "COMPLETE",
+      "s3Uri": "s3://npus-pr-petfusbbc-pdp-media-service-public-use1-sss/animal/7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/image/d3088ae2-3542-49c2-a314-063646fecece.jpg",
+      "s3Url": "https://npus-pr-petfusbbc-pdp-media-service-public-use1-sss.s3.amazonaws.com/animal/7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/image/d3088ae2-3542-49c2-a314-063646fecece.jpg",
+      "mimeType": "image/jpeg",
+      "originalUrl": "dbw3zep4prcju.cloudfront.net/animal/7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/image/d3088ae2-3542-49c2-a314-063646fecece.jpg?versionId=QD9KdQ.OaM1lMusHpqTuu9awvkvq3Vxv",
+      "publicUrl": "dbw3zep4prcju.cloudfront.net/animal/7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/image/d3088ae2-3542-49c2-a314-063646fecece.jpg?versionId=QD9KdQ.OaM1lMusHpqTuu9awvkvq3Vxv",
+      "originalFilename": "957509a75ce09f717f66162bf0a88fce.jpg",
+      "position": null,
+      "mediaUrl": null,
+      "thumbnailUrl": null,
+      "mediaIndex": null,
+      "__typename": "MediaRecord"
+    },
+    {
+      "animalId": "7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8",
+      "mediaId": "d3c793b1-2f72-4c45-ac1c-391c1e51d27e",
+      "mediaFormat": "jpeg",
+      "mediaStatus": "COMPLETE",
+      "s3Uri": "s3://npus-pr-petfusbbc-pdp-media-service-public-use1-sss/animal/7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/image/d3c793b1-2f72-4c45-ac1c-391c1e51d27e.jpg",
+      "s3Url": "https://npus-pr-petfusbbc-pdp-media-service-public-use1-sss.s3.amazonaws.com/animal/7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/image/d3c793b1-2f72-4c45-ac1c-391c1e51d27e.jpg",
+      "mimeType": "image/jpeg",
+      "originalUrl": "dbw3zep4prcju.cloudfront.net/animal/7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/image/d3c793b1-2f72-4c45-ac1c-391c1e51d27e.jpg?versionId=iYoc0__1qNkRaG0nFTdWoohPD09Xq0og",
+      "publicUrl": "dbw3zep4prcju.cloudfront.net/animal/7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/image/d3c793b1-2f72-4c45-ac1c-391c1e51d27e.jpg?versionId=iYoc0__1qNkRaG0nFTdWoohPD09Xq0og",
+      "originalFilename": "c573e4ec74e46e4ab944a3145aec0879.jpg",
+      "position": null,
+      "mediaUrl": null,
+      "thumbnailUrl": null,
+      "mediaIndex": null,
+      "__typename": "MediaRecord"
+    },
+    {
+      "animalId": "7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8",
+      "mediaId": "eb6e1b38-d7b0-41b9-bc4d-5fc1f0f2187c",
+      "mediaFormat": "jpeg",
+      "mediaStatus": "COMPLETE",
+      "s3Uri": "s3://npus-pr-petfusbbc-pdp-media-service-public-use1-sss/animal/7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/image/eb6e1b38-d7b0-41b9-bc4d-5fc1f0f2187c.jpg",
+      "s3Url": "https://npus-pr-petfusbbc-pdp-media-service-public-use1-sss.s3.amazonaws.com/animal/7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/image/eb6e1b38-d7b0-41b9-bc4d-5fc1f0f2187c.jpg",
+      "mimeType": "image/jpeg",
+      "originalUrl": "dbw3zep4prcju.cloudfront.net/animal/7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/image/eb6e1b38-d7b0-41b9-bc4d-5fc1f0f2187c.jpg?versionId=1dU8rPMyJlD10JESUfRSGWM1P6tEE.Ku",
+      "publicUrl": "dbw3zep4prcju.cloudfront.net/animal/7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/image/eb6e1b38-d7b0-41b9-bc4d-5fc1f0f2187c.jpg?versionId=1dU8rPMyJlD10JESUfRSGWM1P6tEE.Ku",
+      "originalFilename": "be996ae01d3e57744b02991abc825982.jpg",
+      "position": null,
+      "mediaUrl": null,
+      "thumbnailUrl": null,
+      "mediaIndex": null,
+      "__typename": "MediaRecord"
+    },
+    {
+      "animalId": "7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8",
+      "mediaId": "fd3dccf9-3639-47c9-ae0c-dc762b6f0b7d",
+      "mediaFormat": "jpeg",
+      "mediaStatus": "COMPLETE",
+      "s3Uri": "s3://npus-pr-petfusbbc-pdp-media-service-public-use1-sss/animal/7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/image/fd3dccf9-3639-47c9-ae0c-dc762b6f0b7d.jpg",
+      "s3Url": "https://npus-pr-petfusbbc-pdp-media-service-public-use1-sss.s3.amazonaws.com/animal/7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/image/fd3dccf9-3639-47c9-ae0c-dc762b6f0b7d.jpg",
+      "mimeType": "image/jpeg",
+      "originalUrl": "dbw3zep4prcju.cloudfront.net/animal/7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/image/fd3dccf9-3639-47c9-ae0c-dc762b6f0b7d.jpg?versionId=FoKAn4rjwSRfNrjJQRHFjQhQY49pNclS",
+      "publicUrl": "dbw3zep4prcju.cloudfront.net/animal/7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/image/fd3dccf9-3639-47c9-ae0c-dc762b6f0b7d.jpg?versionId=FoKAn4rjwSRfNrjJQRHFjQhQY49pNclS",
+      "originalFilename": "f442dae473e25ac54bc8254333c78b90.jpg",
+      "position": null,
+      "mediaUrl": null,
+      "thumbnailUrl": null,
+      "mediaIndex": null,
+      "__typename": "MediaRecord"
+    }
+  ],
+  "residency": {
+    "adoptionFee": 0,
+    "adoptionFeeWaived": false,
+    "displayAdoptionFee": false,
+    "transferDate": null,
+    "transferFromOrganizationId": null,
+    "adoptionDate": null,
+    "adoptionStatus": "Adoptable",
+    "adoptionStatusChangeDate": null,
+    "intakeDate": "2026-02-17T00:00:00.000Z",
+    "intakeType": null,
+    "__typename": "AnimalResidencyResponse"
+  },
+  "behavior": {
+    "activityLevel": null,
+    "interactionsOtherAnimals": null,
+    "houseTrained": "Yes",
+    "requiresFencedYard": null,
+    "knowsBasicCommands": null,
+    "personalityTraits": [
+      "Exercise Needs   Calm Companion",
+      "Housetrained",
+      "Crate Trained",
+      "Good with Cats",
+      "Good with Kids"
+    ],
+    "interactions": {
+      "cats": "Yes",
+      "dogs": null,
+      "otherAnimals": null,
+      "childrenUnder8": "Yes",
+      "children8AndUp": null,
+      "__typename": "AnimalInteractionsResponse"
+    },
+    "__typename": "AnimalBehaviorResponse"
+  },
+  "publicUrl": {
+    "url": "dog/sage-7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/nj/jersey-city/see-spot-rescued-nj708",
+    "__typename": "PublicUrl"
+  },
+  "sponsorAPetUrl": {
+    "url": "https://sap.petfinderfoundation.com/sponsor-a-pet/nj-708/us/nj/7b2b14bf-e32e-4a86-bc0a-7601e5f01cd8/Sage",
+    "__typename": "SponsorAPetUrl"
+  },
+  "__typename": "AnimalResponse"
+}
