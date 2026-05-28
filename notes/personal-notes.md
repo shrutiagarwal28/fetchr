@@ -487,3 +487,29 @@ python3 main.py scrape ...
                             └─► upsert_dog()               # connection.py — writes dog_profiles
                                     └─► _archive_snapshot()    # connection.py — writes dog_profile_history
 ```
+
+--------------------------------
+
+### dog_profiles DB — Complete Field List (as of 2026-05-27)
+
+**Identity:** `id`, `source`, `source_id`, `source_url`, `name`, `animal_type`, `microchip_id`, `internal_notes`, `match_label`, `out_of_town`, `import_updates_enabled`, `import_deletes_enabled`
+
+**Physical:** `breed_primary`, `breed_secondary`, `is_mixed`, `age_category`, `age_years_approx`, `age_label`, `age_range_label`, `size`, `weight_min`, `weight_max`, `weight_range_label`, `gender`, `color`, `color_secondary`, `color_tertiary`, `coat_length`, `declawed`, `species`, `spayed_neutered`, `vaccinated`, `special_needs`, `special_needs_notes`, `birth_date`
+
+**Behavior:** `house_trained`, `activity_level`, `requires_fenced_yard`, `knows_basic_commands`, `behavior_other_animals`, `good_with_kids`, `good_with_dogs`, `good_with_cats`, `good_with_other_animals`, `personality_traits`
+
+**Location:** `location_id`, `location_name`, `location_type`, `location_contact_name`, `location_email`, `location_phone`, `is_appt_only`, `is_map_hidden`, `is_public_location`, `private_address`, `location_street`, `location_street2`, `city`, `state`, `zip`, `country`, `lat`, `lng`
+
+**Organization:** `shelter_name`, `org_id`, `org_type`, `org_custom_url_alias`, `org_website`, `org_social_urls`, `org_mission_statement`, `org_onsite_vet`, `org_supports_rehome`, `org_spay_neuter_policy`, `org_special_services`, `org_adoption_url`, `org_adoption_fee_min`, `org_adoption_fee_max`, `org_annual_adoptions`, `org_annual_intake`, `org_foster_count`, `org_employee_count`, `org_volunteer_count`, `org_display_id`
+
+**Contact:** `contact_id`, `contact_email`, `contact_first_name`, `contact_last_name`, `contact_phone`
+
+**Media:** `photos` (image URLs, quick access), `media_records` (full objects — `animal_id`, `media_id`, `mime_type`, `media_format`, `media_status`, `public_url`, `original_url`, `s3_url`, `s3_uri`, `original_filename`, `position`, `media_url`, `thumbnail_url`, `media_index`)
+
+**Listing content:** `description`, `extended_description`, `petfinder_notes`, `tags`, `petfinder_url`, `sponsor_a_pet_url`
+
+**Adoption / Status:** `status`, `adoption_fee`, `adoption_fee_waived`, `display_adoption_fee`, `adoption_date`, `adoption_status_change_date`, `intake_date`, `intake_type`, `transfer_date`, `transfer_from_org_id`, `listed_at`
+
+**System:** `first_seen_at`, `last_updated_at`
+
+Total: 109 fields across 10 categories.

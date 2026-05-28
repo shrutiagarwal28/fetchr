@@ -70,8 +70,11 @@ def save_raw_scrape(
 # and snapshotted to dog_profile_history before each change.
 # Kept as a module-level tuple so both _has_live_changes and _archive share it.
 _LIVE_FIELDS: tuple[str, ...] = (
-    "status", "photos", "description", "tags",
-    "good_with_dogs", "good_with_cats", "good_with_kids", "house_trained",
+    "status", "photos", "media_records", "description", "extended_description",
+    "tags", "personality_traits",
+    "good_with_dogs", "good_with_cats", "good_with_kids", "good_with_other_animals",
+    "house_trained", "activity_level", "requires_fenced_yard", "vaccinated",
+    "adoption_fee", "adoption_fee_waived",
     "shelter_name", "city", "state", "zip", "listed_at",
 )
 

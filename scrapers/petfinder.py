@@ -120,7 +120,13 @@ def _normalize_age(raw: str) -> tuple[str, Optional[float]]:
         return "young", None
     if "senior" in raw:
         return "senior", None
-    return "adult", None
+
+    if not raw:
+        return "unknown", None
+
+    # Pass the raw value through so no data is silently dropped
+    logger.warning("Unrecognized age string %r — storing as-is", raw)
+    return raw, None
 
 
 def _normalize_size(raw: str) -> str:
@@ -341,18 +347,25 @@ class PetFinderScraper(BaseScraper):
             logger.warning("No __NEXT_DATA__ animal found at %s", url)
             return None
 
-        # --- Identity ---
+        # --- Identity + top-level fields ---
         source_id = animal.get("animalId") or _extract_source_id(url)
         name = (animal.get("animalName") or "").strip()
         if not name:
             logger.warning("No name at %s — skipping", url)
             return None
+        animal_type = animal.get("animalType") or None
+        microchip_id = animal.get("microchipId") or None
+        internal_notes = animal.get("internalNotes") or None
+        match_label = animal.get("matchLabel") or None
+        out_of_town = animal.get("outOfTown")
+        import_updates_enabled = animal.get("importUpdatesEnabled")
+        import_deletes_enabled = animal.get("importDeletesEnabled")
 
         # Save raw blob before any normalization — insurance against scraper bugs.
         # Failure here is logged but never raises so the upsert path is unaffected.
         save_raw_scrape(session, self.SOURCE_NAME, source_id, url, animal)
 
-        # --- Physical attributes (animal.physical) ---
+        # --- Physical (animal.physical) ---
         physical: dict = animal.get("physical") or {}
 
         breed: dict = physical.get("breed") or {}
@@ -361,29 +374,47 @@ class PetFinderScraper(BaseScraper):
         is_mixed = bool(breed.get("mixed", False))
 
         age_obj: dict = physical.get("age") or {}
-        # "value" is the label ("Young"), "rangeLabel" is "(1-3 years)" — use both
         age_raw = age_obj.get("value") or age_obj.get("rangeLabel") or ""
         age_category, age_years_approx = _normalize_age(age_raw)
+        age_label = age_obj.get("label") or None
+        age_range_label = age_obj.get("rangeLabel") or None
 
         size_obj: dict = physical.get("size") or {}
         size = _normalize_size(size_obj.get("label") or "")
+        size_range: dict = size_obj.get("range") or {}
+        weight_min = size_range.get("min")
+        weight_max = size_range.get("max")
+        weight_range_label = size_range.get("label") or None
 
         gender = (physical.get("sex") or "unknown").lower()
+        species = physical.get("species") or None
+        declawed = physical.get("declawed")
 
         color_obj: dict = physical.get("color") or {}
         color = color_obj.get("primary") or None
+        color_secondary = color_obj.get("secondary") or None
+        color_tertiary = color_obj.get("tertiary") or None
 
+        coat_length = physical.get("coatLength") or None
+        spayed_neutered = physical.get("spayedNeutered")
+        vaccinated = physical.get("vaccinated")
         special_needs = bool(physical.get("specialNeeds"))
+        special_needs_notes = physical.get("specialNeedsNotes") or None
         birth_date = _parse_iso_dt(physical.get("birthDate"))
 
-        # --- Behavior / compatibility (animal.behavior) ---
+        # --- Behavior (animal.behavior) ---
         behavior: dict = animal.get("behavior") or {}
         house_trained = _yn_to_bool(behavior.get("houseTrained"))
-        tags: list[str] = behavior.get("personalityTraits") or []
+        activity_level = (behavior.get("activityLevel") or "").strip().lower() or None
+        requires_fenced_yard = _yn_to_bool(behavior.get("requiresFencedYard"))
+        knows_basic_commands = _yn_to_bool(behavior.get("knowsBasicCommands"))
+        behavior_other_animals = behavior.get("interactionsOtherAnimals") or None
+        personality_traits: list[str] = behavior.get("personalityTraits") or []
 
         interactions: dict = behavior.get("interactions") or {}
         good_with_dogs = _yn_to_bool(interactions.get("dogs"))
         good_with_cats = _yn_to_bool(interactions.get("cats"))
+        good_with_other_animals = _yn_to_bool(interactions.get("otherAnimals"))
 
         # PetFinder splits children into two age bands — treat either "Yes" as True
         kids_u8 = _yn_to_bool(interactions.get("childrenUnder8"))
@@ -395,32 +426,110 @@ class PetFinderScraper(BaseScraper):
         else:
             good_with_kids = None
 
-        # --- Location — foster/listing address, not org headquarters (animal._location) ---
-        location: dict = (animal.get("_location") or {}).get("address") or {}
+        # --- Location — foster/listing address, not org HQ (animal._location) ---
+        location_obj: dict = animal.get("_location") or {}
+        location: dict = location_obj.get("address") or {}
+        location_id = location_obj.get("locationId") or None
+        location_name = location_obj.get("locationName") or None
+        location_type = location_obj.get("locationType") or None
+        location_contact_name = location_obj.get("contactName") or None
+        location_email = location_obj.get("email") or None
+        location_phone = (location_obj.get("phone") or "").strip() or None
+        is_appt_only = location_obj.get("isApptOnly")
+        is_map_hidden = location_obj.get("isMapHidden")
+        is_public_location = location_obj.get("isPublic")
+        private_address = location_obj.get("privateAddress")
+        location_street = location.get("street") or None
+        location_street2 = location.get("street2") or None
         city = location.get("city") or None
         state = location.get("state") or None
         zip_code = location.get("postalCode") or None
+        country = location.get("country") or None
+        lat = location.get("latitude")
+        lng = location.get("longitude")
 
-        # --- Shelter (animal._organization) ---
+        # --- Organization (animal._organization) ---
         org: dict = animal.get("_organization") or {}
         shelter_name = org.get("organizationName") or None
+        org_id = org.get("organizationId") or None
+        org_type = org.get("organizationType") or None
+        org_custom_url_alias = org.get("customUrlAlias") or None
+        org_website = org.get("website") or None
+        org_social_urls: list[str] = org.get("socialUrl") or []
+        org_mission_statement = org.get("missionStatement") or None
+        org_onsite_vet = org.get("onsiteVet")
+        org_supports_rehome = org.get("supportsRehome")
+        org_spay_neuter_policy = org.get("spayNeuterPolicy") or None
+        org_special_services: list[str] = org.get("specialServices") or []
+        org_adoption: dict = org.get("adoption") or {}
+        org_adoption_url = org_adoption.get("adoptionApplUrl") or None
+        org_adoption_fee_min = org_adoption.get("adoptionFeeMin")
+        org_adoption_fee_max = org_adoption.get("adoptionFeeMax")
+        org_annual_adoptions = org_adoption.get("annualAdoptions")
+        org_annual_intake = org_adoption.get("annualIntake")
+        org_foster_count = org.get("fosterCount")
+        org_employee_count = org.get("employeeCount")
+        org_volunteer_count = org.get("volunteerCount")
+        org_display_id = org.get("displayId") or None
 
-        # --- Photos — images only, skip mp4 videos (animal._media) ---
+        # --- Contact (animal._contact) ---
+        contact: dict = animal.get("_contact") or {}
+        contact_id = contact.get("contactId") or None
+        contact_email = contact.get("email") or None
+        contact_first_name = contact.get("firstName") or None
+        contact_last_name = contact.get("lastName") or None
+        contact_phone = contact.get("phone") or None
+
+        # --- Media (animal._media) ---
         media_list: list[dict] = animal.get("_media") or []
         photos = [
             "https://" + m["publicUrl"]
             for m in media_list
             if m.get("mimeType", "").startswith("image/") and m.get("publicUrl")
         ]
+        media_records = [
+            {
+                "animal_id": m.get("animalId"),
+                "media_id": m.get("mediaId"),
+                "mime_type": m.get("mimeType"),
+                "media_format": m.get("mediaFormat"),
+                "media_status": m.get("mediaStatus"),
+                "public_url": ("https://" + m["publicUrl"]) if m.get("publicUrl") else None,
+                "original_url": m.get("originalUrl"),
+                "s3_url": m.get("s3Url"),
+                "s3_uri": m.get("s3Uri"),
+                "original_filename": m.get("originalFilename"),
+                "position": m.get("position"),
+                "media_url": m.get("mediaUrl"),
+                "thumbnail_url": m.get("thumbnailUrl"),
+                "media_index": m.get("mediaIndex"),
+            }
+            for m in media_list
+        ]
 
-        # --- Description ---
+        # --- Listing content ---
         description = (animal.get("description") or "").strip() or None
+        extended_description = (animal.get("extendedDescription") or "").strip() or None
+        petfinder_notes = animal.get("notes") or None
+        tags: list[str] = animal.get("tags") or []
+        petfinder_url_obj: dict = animal.get("publicUrl") or {}
+        petfinder_url = petfinder_url_obj.get("url") or None
+        sponsor_url_obj: dict = animal.get("sponsorAPetUrl") or {}
+        sponsor_a_pet_url = sponsor_url_obj.get("url") or None
 
-        # --- Adoption status + listing dates (animal.residency) ---
+        # --- Adoption / status (animal.residency) ---
         residency: dict = animal.get("residency") or {}
         raw_status = (residency.get("adoptionStatus") or "").lower()
         status = STATUS_MAP.get(raw_status, "available")
+        adoption_fee = residency.get("adoptionFee")
+        adoption_fee_waived = residency.get("adoptionFeeWaived")
+        display_adoption_fee = residency.get("displayAdoptionFee")
+        adoption_date = _parse_iso_dt(residency.get("adoptionDate"))
+        adoption_status_change_date = _parse_iso_dt(residency.get("adoptionStatusChangeDate"))
         intake_date = _parse_iso_dt(residency.get("intakeDate"))
+        intake_type = residency.get("intakeType") or None
+        transfer_date = _parse_iso_dt(residency.get("transferDate"))
+        transfer_from_org_id = residency.get("transferFromOrganizationId") or None
         listed_at = _parse_iso_dt(residency.get("publishedAt"))
 
         return DogProfile(
@@ -428,28 +537,106 @@ class PetFinderScraper(BaseScraper):
             source_id=source_id,
             source_url=url,
             name=name,
+            animal_type=animal_type,
+            microchip_id=microchip_id,
+            internal_notes=internal_notes,
+            match_label=match_label,
+            out_of_town=out_of_town,
+            import_updates_enabled=import_updates_enabled,
+            import_deletes_enabled=import_deletes_enabled,
             breed_primary=breed_primary,
             breed_secondary=breed_secondary,
             is_mixed=is_mixed,
             age_category=age_category,
             age_years_approx=age_years_approx,
+            age_label=age_label,
+            age_range_label=age_range_label,
             size=size,
+            weight_min=weight_min,
+            weight_max=weight_max,
+            weight_range_label=weight_range_label,
             gender=gender,
+            species=species,
+            declawed=declawed,
             color=color,
+            color_secondary=color_secondary,
+            color_tertiary=color_tertiary,
+            coat_length=coat_length,
+            spayed_neutered=spayed_neutered,
+            vaccinated=vaccinated,
+            special_needs=special_needs,
+            special_needs_notes=special_needs_notes,
+            birth_date=birth_date,
+            house_trained=house_trained,
+            activity_level=activity_level,
+            requires_fenced_yard=requires_fenced_yard,
+            knows_basic_commands=knows_basic_commands,
+            behavior_other_animals=behavior_other_animals,
             good_with_kids=good_with_kids,
             good_with_dogs=good_with_dogs,
             good_with_cats=good_with_cats,
-            house_trained=house_trained,
-            special_needs=special_needs,
-            shelter_name=shelter_name,
+            good_with_other_animals=good_with_other_animals,
+            personality_traits=personality_traits,
+            location_id=location_id,
+            location_name=location_name,
+            location_type=location_type,
+            location_contact_name=location_contact_name,
+            location_email=location_email,
+            location_phone=location_phone,
+            is_appt_only=is_appt_only,
+            is_map_hidden=is_map_hidden,
+            is_public_location=is_public_location,
+            private_address=private_address,
+            location_street=location_street,
+            location_street2=location_street2,
             city=city,
             state=state,
             zip=zip_code,
+            country=country,
+            lat=lat,
+            lng=lng,
+            shelter_name=shelter_name,
+            org_id=org_id,
+            org_type=org_type,
+            org_custom_url_alias=org_custom_url_alias,
+            org_website=org_website,
+            org_social_urls=org_social_urls,
+            org_mission_statement=org_mission_statement,
+            org_onsite_vet=org_onsite_vet,
+            org_supports_rehome=org_supports_rehome,
+            org_spay_neuter_policy=org_spay_neuter_policy,
+            org_special_services=org_special_services,
+            org_adoption_url=org_adoption_url,
+            org_adoption_fee_min=org_adoption_fee_min,
+            org_adoption_fee_max=org_adoption_fee_max,
+            org_annual_adoptions=org_annual_adoptions,
+            org_annual_intake=org_annual_intake,
+            org_foster_count=org_foster_count,
+            org_employee_count=org_employee_count,
+            org_volunteer_count=org_volunteer_count,
+            org_display_id=org_display_id,
+            contact_id=contact_id,
+            contact_email=contact_email,
+            contact_first_name=contact_first_name,
+            contact_last_name=contact_last_name,
+            contact_phone=contact_phone,
             photos=photos,
+            media_records=media_records,
             description=description,
+            extended_description=extended_description,
+            petfinder_notes=petfinder_notes,
             tags=tags,
+            petfinder_url=petfinder_url,
+            sponsor_a_pet_url=sponsor_a_pet_url,
             status=status,
-            birth_date=birth_date,
+            adoption_fee=adoption_fee,
+            adoption_fee_waived=adoption_fee_waived,
+            display_adoption_fee=display_adoption_fee,
+            adoption_date=adoption_date,
+            adoption_status_change_date=adoption_status_change_date,
             intake_date=intake_date,
+            intake_type=intake_type,
+            transfer_date=transfer_date,
+            transfer_from_org_id=transfer_from_org_id,
             listed_at=listed_at,
         )
