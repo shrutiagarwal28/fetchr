@@ -3,9 +3,10 @@
 ## Context
 
 fetchr is a data ingestion layer for a dog-to-adopter matching platform. The scraper is
-fully built and the DogProfile model now captures all 109 fields from PetFinder. The DB
-is empty — no scrape runs have been done since the schema was expanded. The audit notebook
-(audit.ipynb) was run on a 222-dog sample from the *old* 31-field model and is now stale.
+fully built and the DogProfile model captures all 109 fields from PetFinder. The DB has
+100 dogs scraped from NJ/Jersey City. The audit notebook (audit.ipynb) has been fully
+updated for the 109-field model — it classifies all 83 populated fields, documents null
+rates, and establishes which fields are usable as matching signals.
 No matching algorithm exists yet — this plan maps out which fields matter for matching and
 what the logical sequence of next steps is.
 
@@ -22,9 +23,8 @@ WHERE clause before any ML ranking.
 | `status` | Only show `"available"` dogs — never pending/adopted |
 | `good_with_kids` | Non-negotiable for families with children |
 | `good_with_dogs` | Non-negotiable for households with dogs |
-| `good_with_cats` | Non-negotiable for households with cats |
+| `good_with_cats` | 73% null — treat as soft filter, not hard filter (see audit §9) |
 | `house_trained` | Non-negotiable for apartment adopters |
-| `requires_fenced_yard` | Eliminates apartment adopters for high-energy dogs |
 | `special_needs` | Some adopters specifically want / specifically cannot take special needs dogs |
 | `spayed_neutered` | Many adopters filter on this |
 | `size` | Common hard preference — people know if they want a small vs large dog |
@@ -34,22 +34,21 @@ These contribute to a match score but a null value doesn't disqualify the dog.
 
 | Field | Why |
 |---|---|
-| `age_category` | Preferences exist but many adopters are flexible |
-| `age_years_approx` | More precise than category for "under 3 years" type queries |
+| `age_category` | Preferences exist but many adopters are flexible; 38% mismatch rate vs DOB — treat as approximate |
+| `age_years_approx` | Not yet derived — will be calculated from `birth_date` (29% coverage) or `age_range_label` midpoint |
 | `breed_primary` | Some adopters have breed preferences |
 | `gender` | Some adopters have preferences, others don't care |
-| `activity_level` | "Calm companion" vs "running partner" — high value when populated |
-| `coat_length` | Allergy-sensitive adopters care about this |
-| `weight_min` / `weight_max` | More precise than size label |
-| `knows_basic_commands` | First-time owners prefer trained dogs |
-| `vaccinated` | Health signal |
+| `coat_length` | Allergy-sensitive adopters care about this; 28% null |
+| `color` | Low-weight soft filter; 94% populated, 11 distinct values |
+| `vaccinated` | Health signal; 97% populated |
+| `weight_min` / `weight_max` | SQL range filter only (`WHERE weight_max <= ?`) — not in ML feature vector alongside `size` (same size tier, different representation) |
 
 ### Tier 3: Semantic signal (ML/NLP — fuzzy matching)
 These fields are the richest signal but require embedding/NLP to use.
 
 | Field | Why |
 |---|---|
-| `description` | 96% coverage in old audit, median 1023 chars — best signal for fuzzy matching ("I want a calm apartment dog") |
+| `description` | 100% coverage, median 980 chars — best signal for fuzzy matching ("I want a calm apartment dog") |
 | `personality_traits` | Free-text tags from shelter — "Crate Trained", "Calm Companion", "Good with Cats" |
 
 ### Tier 4: Logistics (shown in results, not used for matching)
@@ -64,6 +63,16 @@ Not used for ranking but displayed to the adopter in search results.
 | `shelter_name` | Shown in results |
 | `petfinder_url` | Link back to source |
 
+### Fields confirmed unpopulated — removed from matching plan
+PetFinder never sends these. Stored in schema for future use but must not be used as filters:
+
+| Field | Coverage | Was planned as |
+|---|---|---|
+| `activity_level` | 0% | Tier 2 soft filter |
+| `requires_fenced_yard` | 0% | Tier 1 hard filter |
+| `knows_basic_commands` | 0% | Tier 2 soft filter |
+| `good_with_other_animals` | 7% | Soft filter |
+
 ### Fields NOT needed for matching
 Everything else — org operational stats (`org_annual_adoptions`, `org_employee_count`),
 PetFinder internal flags (`import_updates_enabled`, `exportApi`), contact details,
@@ -74,32 +83,15 @@ Stored for completeness, not queried.
 
 ## Part 2 — What to do next (in order)
 
-### Step 1: Run the scraper and populate the DB
-The DB is empty. Nothing downstream can be built without real data.
+### ~~Step 1: Run the scraper and populate the DB~~ ✓ Done
+100 dogs scraped from NJ/Jersey City. `dog_profiles` and `raw_scrapes` tables populated.
 
-```bash
-source .venv/bin/activate
-python3 main.py scrape --source petfinder --max 100 --no-headless
-```
+### ~~Step 2: Update the data audit notebook~~ ✓ Done
+`audit.ipynb` fully rewritten for the 109-field model. Key findings documented in the
+notebook and reflected in the field tiers above. See audit §9 Summary for the complete
+matching signal table.
 
-Verify:
-```bash
-sqlite3 fetchr.db "SELECT COUNT(*) FROM dog_profiles;"
-sqlite3 fetchr.db "SELECT name, breed_primary, size, good_with_kids, activity_level FROM dog_profiles LIMIT 10;"
-```
-
-### Step 2: Update the data audit notebook
-The existing `audit.ipynb` was run on the old 31-field model. Re-run it on the new
-109-field model to answer:
-- Which of the new fields (activity_level, requires_fenced_yard, vaccinated, etc.) are
-  actually populated vs null?
-- What are the real null rates for good_with_kids, good_with_dogs, good_with_cats now?
-- Are personality_traits consistent or freeform noise?
-- What does the description length distribution look like?
-
-This audit output directly determines which fields can be trusted as matching signals.
-
-### Step 3: Migrate to Postgres
+### Step 3: Migrate to Postgres ← current sprint
 SQLite cannot support what comes next:
 - Concurrent writes when the scraper runs in parallel
 - `pgvector` extension for semantic embedding similarity search
