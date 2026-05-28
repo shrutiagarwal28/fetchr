@@ -1,0 +1,119 @@
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+
+language: "en-US"
+
+reviews:
+  # "chill" = high signal-to-noise: only flags real bugs and security issues,
+  # not style opinions or minor refactors
+  profile: "chill"
+
+  # Don't block merges via "request changes" — leave comments only
+  request_changes_workflow: false
+
+  high_level_summary: true
+  poem: false
+  review_status: true
+
+  # Project context that every review should be aware of
+  instructions: |
+    fetchr is the data ingestion layer of a commercial dog-to-adopter matching platform.
+    It scrapes PetFinder (and AdoptaPet) via Playwright, normalizes listings into a
+    DogProfile Pydantic model, and writes to a DB using upsert semantics.
+
+    We are in an active growth phase — the current sprint is migrating from SQLite to
+    Postgres. The review priority order is:
+
+    1. Correctness bugs — wrong data written, dedup key collisions, silent data loss
+    2. Security — parameterized queries are mandatory; flag any string-interpolated SQL
+    3. Postgres migration safety — any SQLite-ism that will break on Postgres
+    4. Missing type hints on public functions
+    5. Silent exception swallowing (bare except, logging.exception without re-raise)
+
+    Do NOT comment on:
+    - Formatting, whitespace, line length
+    - Docstring style or presence
+    - Naming conventions (the codebase uses self-documenting names intentionally)
+    - Refactoring that doesn't fix a bug
+    - Adding logging where it doesn't exist
+    - Minor simplification suggestions
+    - Comments saying "consider using X instead of Y" with no concrete bug
+
+  auto_review:
+    enabled: true
+    drafts: false
+    # Only auto-review PRs targeting main — feature branches are noisy work-in-progress
+    base_branches:
+      - "main"
+
+  # Exclude files that are never production code
+  path_filters:
+    - "!.idea/**"
+    - "!notes/**"
+    - "!*.ipynb"
+    - "!*.png"
+    - "!*.jpg"
+    - "!*.theme"
+    - "!debug_listing.*"
+    - "!fetchr.db"
+    - "!fetchr.json"
+    - "!.env"
+    - "!.env.example"
+    - "!vscode-pets.theme"
+
+  path_instructions:
+    # DB layer: highest risk area — SQL safety and upsert correctness matter most
+    - path: "db/**"
+      instructions: |
+        This is the only write path to the database. Focus on:
+        - Parameterized queries only — flag any f-string or %-format SQL immediately
+        - upsert_dog() dedup key is (source, source_id); verify it's used correctly
+        - _archive_snapshot() must run inside the same transaction as the upsert
+        - Postgres compatibility: no SQLite-specific pragmas, type affinities, or AUTOINCREMENT
+        - Connection handling: no leaked connections, no missing .close() or context manager exits
+        Skip: docstring style, variable naming, minor restructuring.
+
+    # Scrapers: data extraction correctness and rate-limit safety
+    - path: "scrapers/**"
+      instructions: |
+        Focus on:
+        - Key access on __NEXT_DATA__ JSON must use .get() with a safe default — KeyError
+          will silently drop a dog record; that is a correctness bug
+        - BaseScraper._random_delay() must not be removed or bypassed — it is the rate
+          limit mechanism; removing it risks IP bans
+        - Any new scraper must set SOURCE_NAME as a class constant — it is the dedup key
+        - Playwright selectors: flag any CSS selector that looks fragile; prefer __NEXT_DATA__
+          JSON extraction (the architectural decision documented in CLAUDE.md)
+        Skip: formatting, logging style, minor refactoring.
+
+    # Models: schema is the contract between scraper and matching platform
+    - path: "models/**"
+      instructions: |
+        DogProfile is the canonical schema for the matching platform. Focus on:
+        - Tier 1 matching fields (status, good_with_kids, good_with_dogs, good_with_cats,
+          house_trained, requires_fenced_yard, special_needs, spayed_neutered, size) must
+          never be typed as Optional without an explicit default — null here breaks the
+          hard-filter SQL WHERE clause
+        - Any field removed from DogProfile is a breaking change for downstream consumers
+        - Pydantic validators must not silently coerce unexpected values to None; they
+          should log a warning with the original raw value
+        Skip: field ordering, docstrings, minor validator simplifications.
+
+    # Tests: coverage should track the DB and model layers
+    - path: "tests/**"
+      instructions: |
+        Only flag tests that test the wrong thing or could give false confidence:
+        - DB tests should hit a real test DB, not mocks — mocks have hidden SQLite/Postgres
+          divergence
+        - Tests that patch upsert_dog() and then assert DB state are testing nothing
+        Skip: test naming, assertion style, minor restructuring.
+
+  finishing_touches:
+    docstrings:
+      enabled: false
+
+tools:
+  ast_grep:
+    enabled: true
+
+chat:
+  auto_reply: true
