@@ -1,5 +1,5 @@
 """
-fetchr CLI — scrape dog adoption listings into a local SQLite database.
+fetchr CLI — scrape dog adoption listings into a local Postgres database.
 
 Usage:
   python main.py scrape --source petfinder --max 100
@@ -47,7 +47,7 @@ def _run_scrape(source: str, max_results: int, headless: bool, location: str) ->
 def main() -> None:
     parser = argparse.ArgumentParser(
         prog="fetchr",
-        description="Scrape dog adoption listings into a local SQLite database.",
+        description="Scrape dog adoption listings into a Postgres database.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 

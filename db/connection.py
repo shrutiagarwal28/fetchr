@@ -5,8 +5,8 @@ upsert_dog() is the only write path — everything funnels through it so
 deduplication is always enforced. It returns an action string so callers
 can count created/updated/skipped without re-querying.
 
-export_to_json() is a read-only snapshot: it reads all rows from SQLite
-and writes them to a JSON file so the data is inspectable without sqlite3.
+export_to_json() is a read-only snapshot: it reads all rows from the database
+and writes them to a JSON file for use by the audit notebook.
 """
 
 from __future__ import annotations
@@ -22,22 +22,30 @@ from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session as SessionType
 
-from config import DB_PATH, JSON_PATH
+from config import DATABASE_URL, JSON_PATH
 from models.dog import Base, DogORM, DogProfile, DogProfileHistory, RawScrape
 
 logger = logging.getLogger(__name__)
 
-engine = create_engine(
-    f"sqlite:///{DB_PATH}",
-    connect_args={"check_same_thread": False},
+# None when DATABASE_URL is unset — callers that inject their own session
+# (tests, one-off scripts) can import this module without a running Postgres.
+engine = (
+    create_engine(
+        DATABASE_URL,
+        pool_pre_ping=True,   # detect stale connections before handing them out
+        pool_size=5,          # baseline connections kept alive between scrape runs
+        max_overflow=10,      # burst capacity for parallel future workers
+    )
+    if DATABASE_URL
+    else None
 )
-Session = sessionmaker(bind=engine)
+Session = sessionmaker(bind=engine) if engine else None
 
 
 def create_tables() -> None:
     """Create all tables if they don't already exist. Safe to call on every run."""
     Base.metadata.create_all(engine)
-    logger.info("Database ready at %s", DB_PATH)
+    logger.info("Database tables ready")
 
 
 def save_raw_scrape(
@@ -57,7 +65,7 @@ def save_raw_scrape(
             source=source,
             source_id=source_id,
             source_url=url,
-            scraped_at=datetime.now(timezone.utc).replace(tzinfo=None),
+            scraped_at=datetime.now(timezone.utc),
             raw_json=raw,
         ))
         session.commit()
@@ -147,7 +155,7 @@ def upsert_dog(session: SessionType, profile: DogProfile) -> str:
 
 def export_to_json(path: str = JSON_PATH) -> int:
     """
-    Snapshot all dog records from SQLite into a JSON file.
+    Snapshot all dog records from the database into a JSON file.
 
     Uses an atomic write (temp file → os.replace) so a crash mid-export
     never leaves a half-written file at the destination path.

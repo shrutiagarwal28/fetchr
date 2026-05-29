@@ -24,11 +24,11 @@ from sqlalchemy import (
     DateTime,
     Float,
     Index,
-    JSON,
     String,
     Text,
     UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase
 
 
@@ -220,7 +220,7 @@ class DogORM(Base):
     vaccinated = Column(Boolean, nullable=True)
     special_needs = Column(Boolean, default=False, nullable=False)
     special_needs_notes = Column(Text, nullable=True)
-    birth_date = Column(DateTime, nullable=True)
+    birth_date = Column(DateTime(timezone=True), nullable=True)
 
     # Behavior
     house_trained = Column(Boolean, nullable=True)
@@ -232,7 +232,7 @@ class DogORM(Base):
     good_with_dogs = Column(Boolean, nullable=True)
     good_with_cats = Column(Boolean, nullable=True)
     good_with_other_animals = Column(Boolean, nullable=True)
-    personality_traits = Column(JSON, default=list, nullable=False)
+    personality_traits = Column(JSONB, default=list, nullable=False)
 
     # Location
     location_id = Column(String(36), nullable=True)
@@ -260,12 +260,12 @@ class DogORM(Base):
     org_type = Column(String(100), nullable=True)
     org_custom_url_alias = Column(String(255), nullable=True)
     org_website = Column(Text, nullable=True)
-    org_social_urls = Column(JSON, default=list, nullable=False)
+    org_social_urls = Column(JSONB, default=list, nullable=False)
     org_mission_statement = Column(Text, nullable=True)
     org_onsite_vet = Column(Boolean, nullable=True)
     org_supports_rehome = Column(Boolean, nullable=True)
     org_spay_neuter_policy = Column(Text, nullable=True)
-    org_special_services = Column(JSON, default=list, nullable=False)
+    org_special_services = Column(JSONB, default=list, nullable=False)
     org_adoption_url = Column(Text, nullable=True)
     org_adoption_fee_min = Column(Float, nullable=True)
     org_adoption_fee_max = Column(Float, nullable=True)
@@ -284,14 +284,14 @@ class DogORM(Base):
     contact_phone = Column(String(50), nullable=True)
 
     # Media
-    photos = Column(JSON, default=list, nullable=False)
-    media_records = Column(JSON, default=list, nullable=False)
+    photos = Column(JSONB, default=list, nullable=False)
+    media_records = Column(JSONB, default=list, nullable=False)
 
     # Listing content
     description = Column(Text, nullable=True)
     extended_description = Column(Text, nullable=True)
     petfinder_notes = Column(Text, nullable=True)
-    tags = Column(JSON, default=list, nullable=False)
+    tags = Column(JSONB, default=list, nullable=False)
     petfinder_url = Column(Text, nullable=True)
     sponsor_a_pet_url = Column(Text, nullable=True)
 
@@ -300,16 +300,16 @@ class DogORM(Base):
     adoption_fee = Column(Float, nullable=True)
     adoption_fee_waived = Column(Boolean, nullable=True)
     display_adoption_fee = Column(Boolean, nullable=True)
-    adoption_date = Column(DateTime, nullable=True)
-    adoption_status_change_date = Column(DateTime, nullable=True)
-    intake_date = Column(DateTime, nullable=True)
+    adoption_date = Column(DateTime(timezone=True), nullable=True)
+    adoption_status_change_date = Column(DateTime(timezone=True), nullable=True)
+    intake_date = Column(DateTime(timezone=True), nullable=True)
     intake_type = Column(String(50), nullable=True)
-    transfer_date = Column(DateTime, nullable=True)
+    transfer_date = Column(DateTime(timezone=True), nullable=True)
     transfer_from_org_id = Column(String(36), nullable=True)
-    listed_at = Column(DateTime, nullable=True)
+    listed_at = Column(DateTime(timezone=True), nullable=True)
 
-    first_seen_at = Column(DateTime, nullable=False)
-    last_updated_at = Column(DateTime, nullable=False)
+    first_seen_at = Column(DateTime(timezone=True), nullable=False)
+    last_updated_at = Column(DateTime(timezone=True), nullable=False)
 
 
 # ---------------------------------------------------------------------------
@@ -338,8 +338,8 @@ class RawScrape(Base):
     source = Column(String(50), nullable=False)
     source_id = Column(String(255), nullable=False)
     source_url = Column(Text, nullable=False)
-    scraped_at = Column(DateTime, nullable=False)
-    raw_json = Column(JSON, nullable=False)
+    scraped_at = Column(DateTime(timezone=True), nullable=False)
+    raw_json = Column(JSONB, nullable=False)
 
 
 # ---------------------------------------------------------------------------
@@ -369,15 +369,15 @@ class DogProfileHistory(Base):
     source_id = Column(String(255), nullable=False)
     # When this snapshot was taken — equals the main row's last_updated_at at
     # the moment of archiving, so you can reconstruct "what was true at time T".
-    archived_at = Column(DateTime, nullable=False)
+    archived_at = Column(DateTime(timezone=True), nullable=False)
     # Live fields — same types as dog_profiles
     status = Column(String(20), nullable=False)
-    photos = Column(JSON, nullable=False)
-    media_records = Column(JSON, nullable=False)
+    photos = Column(JSONB, nullable=False)
+    media_records = Column(JSONB, nullable=False)
     description = Column(Text, nullable=True)
     extended_description = Column(Text, nullable=True)
-    tags = Column(JSON, nullable=False)
-    personality_traits = Column(JSON, nullable=False)
+    tags = Column(JSONB, nullable=False)
+    personality_traits = Column(JSONB, nullable=False)
     good_with_dogs = Column(Boolean, nullable=True)
     good_with_cats = Column(Boolean, nullable=True)
     good_with_kids = Column(Boolean, nullable=True)
@@ -392,4 +392,4 @@ class DogProfileHistory(Base):
     city = Column(String(100), nullable=True)
     state = Column(String(10), nullable=True)
     zip = Column(String(20), nullable=True)
-    listed_at = Column(DateTime, nullable=True)
+    listed_at = Column(DateTime(timezone=True), nullable=True)

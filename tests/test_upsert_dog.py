@@ -1,15 +1,27 @@
 """
 Smoke tests for upsert_dog() — the only write path to dog_profiles.
 
-Uses an in-memory SQLite database so the real fetchr.db is never touched.
-Each test gets its own isolated DB so there is no shared state between cases.
+Requires a running Postgres instance. Set DATABASE_URL before running:
 
-Run with:
-  source .venv/bin/activate
   PYTHONPATH=. python3 tests/test_upsert_dog.py
+
+Each test gets a clean schema via drop_all + create_all, so there is no shared
+state between test cases. Point DATABASE_URL at a dedicated test database —
+the entire schema is wiped and rebuilt on every test invocation.
+
+Why Postgres and not SQLite:
+  - JSONB columns (personality_traits, photos, tags, etc.) behave differently
+    from SQLite's TEXT fallback — JSONB containment queries won't even parse on SQLite.
+  - DateTime(timezone=True) maps to TIMESTAMPTZ in Postgres; SQLite ignores
+    the timezone flag entirely.
+  - The FK constraint on dog_profile_history only exists in Postgres.
+  Testing against the real backend catches real bugs.
 """
 
 from __future__ import annotations
+
+import os
+import sys
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session as SessionType
@@ -22,11 +34,46 @@ from db.connection import upsert_dog
 # Helpers
 # ---------------------------------------------------------------------------
 
+# Module-level engine and session kept so _make_session() can close the
+# previous session before calling drop_all(). Without this, the previous
+# session's implicit transaction (started by the COUNT query in assertions)
+# holds an ACCESS SHARE lock on dog_profiles. DROP TABLE needs ACCESS
+# EXCLUSIVE, which conflicts — causing Postgres to hang indefinitely.
+_engine = None          # sqlalchemy.engine.Engine, created once per process
+_current_session: SessionType | None = None
+
+
 def _make_session() -> SessionType:
-    """Isolated in-memory SQLite DB — discarded when the session is garbage-collected."""
-    engine = create_engine("sqlite:///:memory:")
-    Base.metadata.create_all(engine)
-    return sessionmaker(bind=engine)()
+    """
+    Wipe and recreate the full schema against the test Postgres DB.
+
+    drop_all + create_all gives per-test isolation: every test starts from
+    an empty database, the same guarantee the old in-memory SQLite approach
+    gave — but now against the actual production backend.
+    """
+    global _engine, _current_session
+
+    url = os.environ.get("TEST_DATABASE_URL", "")
+    if not url:
+        sys.exit(
+            "TEST_DATABASE_URL is not set.\n"
+            "Add it to your .env file:\n"
+            "  TEST_DATABASE_URL=postgresql://shruti@localhost:5432/fetchr_test"
+        )
+
+    # Close the previous session so its connection is returned to the pool
+    # as idle (not idle-in-transaction). This releases any ACCESS SHARE locks
+    # before we attempt the DROP TABLE below.
+    if _current_session is not None:
+        _current_session.close()
+
+    if _engine is None:
+        _engine = create_engine(url)
+
+    Base.metadata.drop_all(_engine)
+    Base.metadata.create_all(_engine)
+    _current_session = sessionmaker(bind=_engine)()
+    return _current_session
 
 
 def _make_profile(**overrides) -> DogProfile:
@@ -60,7 +107,6 @@ def test_create_new_record() -> None:
 
 
 def test_unchanged_on_rescrape() -> None:
-    # No live fields change between the two scrapes.
     session = _make_session()
     upsert_dog(session, _make_profile())
 
@@ -118,6 +164,36 @@ def test_stable_fields_not_overwritten_on_rescrape() -> None:
     print("OK  stable fields (name, breed) preserved after rescrape")
 
 
+def test_jsonb_list_fields_round_trip() -> None:
+    # Verify JSONB columns store and retrieve Python lists correctly on Postgres.
+    session = _make_session()
+    traits = ["energetic", "friendly", "good with kids"]
+    profile = _make_profile(personality_traits=traits, tags=["staff-pick"])
+
+    upsert_dog(session, profile)
+
+    row = session.query(DogORM).first()
+    assert row.personality_traits == traits, \
+        f"personality_traits JSONB round-trip failed: {row.personality_traits!r}"
+    assert row.tags == ["staff-pick"], \
+        f"tags JSONB round-trip failed: {row.tags!r}"
+    print("OK  JSONB list fields round-trip correctly through Postgres")
+
+
+def test_timestamptz_is_timezone_aware() -> None:
+    # Verify that datetimes written to TIMESTAMPTZ columns come back as
+    # timezone-aware (not naive) datetimes from Postgres.
+    session = _make_session()
+    upsert_dog(session, _make_profile())
+
+    row = session.query(DogORM).first()
+    assert row.first_seen_at.tzinfo is not None, \
+        "first_seen_at should be timezone-aware after TIMESTAMPTZ round-trip"
+    assert row.last_updated_at.tzinfo is not None, \
+        "last_updated_at should be timezone-aware after TIMESTAMPTZ round-trip"
+    print("OK  TIMESTAMPTZ columns return timezone-aware datetimes")
+
+
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
@@ -125,4 +201,6 @@ if __name__ == "__main__":
     test_unchanged_on_rescrape()
     test_updated_archives_old_live_field()
     test_stable_fields_not_overwritten_on_rescrape()
+    test_jsonb_list_fields_round_trip()
+    test_timestamptz_is_timezone_aware()
     print("\nAll upsert_dog() smoke tests passed.")

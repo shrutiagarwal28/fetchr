@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DB_PATH: str = os.getenv("DB_PATH", "fetchr.db")
+DATABASE_URL: str = os.getenv("DATABASE_URL", "")
 JSON_PATH: str = os.getenv("JSON_PATH", "fetchr.json")
 # Format: "{state}/{city}", e.g. "nj/jersey-city" or "ny/new york".
 # Spaces and hyphens in the city are stripped when building the PetFinder URL.
