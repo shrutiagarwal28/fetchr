@@ -153,7 +153,43 @@ def upsert_dog(session: SessionType, profile: DogProfile) -> str:
         return "skipped"
 
 
-def export_to_json(path: str = JSON_PATH) -> int:
+def mark_deleted(
+    session: SessionType,
+    source: str,
+    source_id: str,
+    reason: str,
+) -> bool:
+    """
+    Soft-delete a dog profile.
+
+    Archives a final snapshot of the current live fields to dog_profile_history
+    before setting deleted_at, so the last known state is always preserved.
+    Returns True if the row was found and marked, False if not found.
+
+    Valid reason values: "erroneous", "delisted_by_source", "duplicate", "manual".
+    Dogs soft-deleted this way are excluded from export_to_json() and active
+    listing queries (WHERE deleted_at IS NULL) but remain in dog_profiles for
+    audit and ML training purposes.
+    """
+    existing: DogORM | None = (
+        session.query(DogORM)
+        .filter_by(source=source, source_id=source_id)
+        .first()
+    )
+    if existing is None:
+        logger.warning("mark_deleted: no row found for %s/%s", source, source_id)
+        return False
+
+    _archive_snapshot(session, existing)
+    existing.deleted_at = datetime.now(timezone.utc)
+    existing.deletion_reason = reason
+    existing.last_updated_at = datetime.now(timezone.utc)
+    session.commit()
+    logger.info("Soft-deleted %s/%s reason=%s", source, source_id, reason)
+    return True
+
+
+def export_to_json(path: str = JSON_PATH, include_deleted: bool = False) -> int:
     """
     Snapshot all dog records from the database into a JSON file.
 
@@ -163,7 +199,10 @@ def export_to_json(path: str = JSON_PATH) -> int:
     Returns the number of records written.
     """
     with Session() as session:
-        rows: list[DogORM] = session.query(DogORM).all()
+        q = session.query(DogORM)
+        if not include_deleted:
+            q = q.filter(DogORM.deleted_at.is_(None))
+        rows: list[DogORM] = q.all()
 
     records = []
     for row in rows:

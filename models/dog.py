@@ -4,8 +4,8 @@ DogProfile — the single source of truth for a scraped dog listing.
 Two representations live here intentionally:
   - DogProfile (Pydantic): validates and normalizes raw scraped strings at
     the boundary, before anything touches the DB.
-  - DogORM (SQLAlchemy): the persistent record. JSON columns store lists
-    (photos, tags) since SQLite has no native array type.
+  - DogORM (SQLAlchemy): the persistent record. List fields use JSONB for
+    native binary storage and GIN-indexable queries on Postgres.
 
 Pattern: Extract → Validate (Pydantic) → Upsert (ORM).
 Classes are ordered to match that pipeline: DogProfile first, then DogORM.
@@ -311,6 +311,12 @@ class DogORM(Base):
     first_seen_at = Column(DateTime(timezone=True), nullable=False)
     last_updated_at = Column(DateTime(timezone=True), nullable=False)
 
+    # Soft delete — set by mark_deleted(), never by the scraper.
+    # Dogs are never hard-deleted; set deleted_at to hide from active queries.
+    # Valid reasons: "erroneous" | "delisted_by_source" | "duplicate" | "manual"
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+    deletion_reason = Column(String(50), nullable=True)
+
 
 # ---------------------------------------------------------------------------
 # Raw scrape storage
@@ -355,8 +361,8 @@ class DogProfileHistory(Base):
     the main dog_profiles row. This gives a full timeline of every state change
     — e.g. adoptable → pending → adopted — without bloating the main table.
 
-    dog_profile_id is a soft FK to dog_profiles.id (no DB-level constraint so
-    SQLite doesn't need foreign-key pragma to be enabled).
+    dog_profile_id references dog_profiles.id. The FK constraint (ON DELETE RESTRICT)
+    is enforced at the DB level via the Alembic migration, not declared in the ORM model.
     """
     __tablename__ = "dog_profile_history"
     __table_args__ = (
@@ -364,6 +370,9 @@ class DogProfileHistory(Base):
     )
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    # DB-level FK to dog_profiles.id enforced via Alembic migration (ON DELETE RESTRICT).
+    # Declared here without ForeignKey() so the constraint lives in the migration layer,
+    # not scattered across ORM models — consistent with how all schema constraints are managed.
     dog_profile_id = Column(String(36), nullable=False)
     source = Column(String(50), nullable=False)
     source_id = Column(String(255), nullable=False)

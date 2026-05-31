@@ -499,3 +499,102 @@ psql fetchr -c "SELECT name, breed_primary, city, status FROM dog_profiles LIMIT
 10. `alembic upgrade head` — apply to local Postgres
 11. `.env.example` — document `DATABASE_URL`
 12. Run verification steps above
+
+---
+
+## Phase 2: Soft Deletes + FK Constraint on `dog_profile_history`
+
+This phase was implemented after the initial Postgres migration was verified working.
+Migration: `alembic/versions/9d6b0f02f6f3_add_soft_deletes_and_fk_constraint.py`
+
+### Why
+
+Two separate problems solved together in one migration:
+
+1. **No referential integrity on `dog_profile_history`.** The original schema had a
+   "soft FK" — a comment saying `dog_profile_id` references `dog_profiles.id`, but no
+   DB-level enforcement. A bug could write a history row with a garbage `dog_profile_id`
+   and Postgres would silently accept it. With the FK constraint, Postgres rejects bad
+   inserts immediately.
+
+2. **No way to retire a dog listing without deleting its data.** Erroneous uploads
+   needed to disappear from the active feed. Adopted/delisted dogs needed to be preserved
+   for ML training and audit. A hard `DELETE` would destroy history. The solution is soft
+   deletes — mark the row as deleted, never remove it.
+
+### Key design decisions
+
+**`deleted_at` and `deletion_reason` live on `DogORM` only, not `DogProfile` (Pydantic).**
+`DogProfile` is the validation schema for data coming from PetFinder. Soft delete is an
+administrative action we take — PetFinder never sends a "deleted" signal. Adding these
+fields to `DogProfile` would imply they're scraped fields; they aren't.
+
+**`upsert_dog()` is unchanged.** If a soft-deleted dog is scraped again, `upsert_dog()`
+updates its live fields as normal but leaves `deleted_at` and `deletion_reason` intact
+(they are not in `_LIVE_FIELDS`). The dog stays administratively deleted while its data
+stays current. Un-deletion requires an explicit call — no accidental resurrection.
+
+**FK lives in the migration, not the ORM model.** `DogProfileHistory.dog_profile_id`
+stays as `Column(String(36), nullable=False)` in `models/dog.py`. The FK constraint is
+added via `op.create_foreign_key()` in the Alembic migration. This keeps all schema
+constraints managed in one place — the migration layer — not split across ORM models
+and migration scripts.
+
+**`ON DELETE RESTRICT` instead of `CASCADE`.** Dog history must never be deleted, even
+if the dog profile is retired. `RESTRICT` means Postgres blocks any hard delete of a
+`dog_profiles` row while history rows reference it. Since soft deletes never issue
+`DELETE`, this constraint is a pure safety net against bugs — not a policy mechanism.
+
+### What was added
+
+**`models/dog.py` — `DogORM`:**
+```python
+deleted_at      = Column(DateTime(timezone=True), nullable=True)
+deletion_reason = Column(String(50), nullable=True)
+# valid reasons: "erroneous" | "delisted_by_source" | "duplicate" | "manual"
+```
+
+**`db/connection.py` — new function:**
+```python
+def mark_deleted(session, source, source_id, reason) -> bool:
+    # Archives a final snapshot, then sets deleted_at + deletion_reason.
+    # Returns True if found, False if the dog doesn't exist.
+```
+
+**`db/connection.py` — `export_to_json()` updated:**
+- Now accepts `include_deleted: bool = False`
+- By default excludes soft-deleted rows (`WHERE deleted_at IS NULL`)
+
+**`alembic/versions/9d6b0f02f6f3_...py` — migration:**
+```python
+op.add_column('dog_profiles', Column('deleted_at', DateTime(timezone=True), nullable=True))
+op.add_column('dog_profiles', Column('deletion_reason', String(50), nullable=True))
+op.create_index('ix_dog_profiles_deleted_at', 'dog_profiles', ['deleted_at'])
+op.create_foreign_key(
+    'fk_history_dog_profile_id',
+    'dog_profile_history', 'dog_profiles',
+    ['dog_profile_id'], ['id'],
+    ondelete='RESTRICT',
+)
+```
+
+### Tests added (9 total after this phase, up from 6)
+
+| Test | What it verifies |
+|---|---|
+| `test_mark_deleted_sets_fields` | `deleted_at` and `deletion_reason` are set; final history snapshot is written |
+| `test_fk_constraint_rejects_bad_profile_id` | Inserting a history row with a non-existent `dog_profile_id` raises `IntegrityError` |
+| `test_restrict_blocks_hard_delete` | Attempting `DELETE FROM dog_profiles` on a row with history raises `IntegrityError` |
+
+### Active listing query pattern going forward
+
+```sql
+-- Active dogs only (default)
+SELECT * FROM dog_profiles WHERE deleted_at IS NULL;
+
+-- All dogs including retired ones
+SELECT * FROM dog_profiles;
+
+-- Audit: what was deleted and why
+SELECT name, deletion_reason, deleted_at FROM dog_profiles WHERE deleted_at IS NOT NULL;
+```

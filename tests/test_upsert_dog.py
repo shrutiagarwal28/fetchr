@@ -23,11 +23,13 @@ from __future__ import annotations
 import os
 import sys
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session as SessionType
 
+from sqlalchemy.exc import IntegrityError
+
 from models.dog import Base, DogORM, DogProfile, DogProfileHistory
-from db.connection import upsert_dog
+from db.connection import upsert_dog, mark_deleted
 
 
 # ---------------------------------------------------------------------------
@@ -72,6 +74,19 @@ def _make_session() -> SessionType:
 
     Base.metadata.drop_all(_engine)
     Base.metadata.create_all(_engine)
+
+    # The FK on dog_profile_history.dog_profile_id is declared in the Alembic
+    # migration, not the ORM model, so create_all() won't add it. Apply it here
+    # so the test schema matches the production Alembic-managed schema exactly.
+    with _engine.connect() as conn:
+        conn.execute(text(
+            "ALTER TABLE dog_profile_history "
+            "ADD CONSTRAINT fk_history_dog_profile_id "
+            "FOREIGN KEY (dog_profile_id) REFERENCES dog_profiles(id) "
+            "ON DELETE RESTRICT"
+        ))
+        conn.commit()
+
     _current_session = sessionmaker(bind=_engine)()
     return _current_session
 
@@ -194,6 +209,65 @@ def test_timestamptz_is_timezone_aware() -> None:
     print("OK  TIMESTAMPTZ columns return timezone-aware datetimes")
 
 
+def test_mark_deleted_sets_fields() -> None:
+    session = _make_session()
+    upsert_dog(session, _make_profile())
+
+    found = mark_deleted(session, source="petfinder", source_id="test-dog-001",
+                         reason="erroneous")
+
+    assert found is True, "mark_deleted should return True when the row exists"
+    row = session.query(DogORM).first()
+    assert row.deleted_at is not None, "deleted_at must be set after mark_deleted"
+    assert row.deleted_at.tzinfo is not None, "deleted_at must be timezone-aware"
+    assert row.deletion_reason == "erroneous", \
+        f"expected 'erroneous', got {row.deletion_reason!r}"
+    assert session.query(DogProfileHistory).count() == 1, \
+        "mark_deleted must archive a final snapshot before soft-deleting"
+    print("OK  mark_deleted sets deleted_at, deletion_reason, and archives final snapshot")
+
+
+def test_fk_constraint_rejects_bad_profile_id() -> None:
+    # The FK on dog_profile_history.dog_profile_id must reject inserts where
+    # the referenced dog_profiles.id does not exist.
+    session = _make_session()
+
+    session.add(DogProfileHistory(
+        id="hist-bad-001",
+        dog_profile_id="nonexistent-id",   # no matching row in dog_profiles
+        source="petfinder",
+        source_id="test-dog-001",
+        archived_at=__import__("datetime").datetime.now(__import__("datetime").timezone.utc),
+        status="available",
+        photos=[], media_records=[], tags=[], personality_traits=[],
+    ))
+    try:
+        session.commit()
+        assert False, "expected IntegrityError from FK violation — not raised"
+    except IntegrityError:
+        session.rollback()
+    print("OK  FK constraint rejects history row with non-existent dog_profile_id")
+
+
+def test_restrict_blocks_hard_delete() -> None:
+    # ON DELETE RESTRICT must prevent hard-deleting a dog_profiles row
+    # while dog_profile_history rows reference it.
+    session = _make_session()
+    upsert_dog(session, _make_profile(status="available"))
+    mark_deleted(session, source="petfinder", source_id="test-dog-001",
+                 reason="erroneous")  # writes one history row
+
+    try:
+        session.query(DogORM).filter_by(
+            source="petfinder", source_id="test-dog-001"
+        ).delete(synchronize_session=False)
+        session.commit()
+        assert False, "expected IntegrityError from ON DELETE RESTRICT — not raised"
+    except IntegrityError:
+        session.rollback()
+    print("OK  ON DELETE RESTRICT blocks hard delete of dog_profiles row with history")
+
+
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
@@ -203,4 +277,7 @@ if __name__ == "__main__":
     test_stable_fields_not_overwritten_on_rescrape()
     test_jsonb_list_fields_round_trip()
     test_timestamptz_is_timezone_aware()
+    test_mark_deleted_sets_fields()
+    test_fk_constraint_rejects_bad_profile_id()
+    test_restrict_blocks_hard_delete()
     print("\nAll upsert_dog() smoke tests passed.")

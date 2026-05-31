@@ -513,3 +513,19 @@ python3 main.py scrape ...
 **System:** `first_seen_at`, `last_updated_at`
 
 Total: 109 fields across 10 categories.
+
+--------------------------------
+
+### Why the FK constraint lives in the Alembic migration, not the ORM model
+
+The real reason to keep the FK out of the ORM model is that the FK is a Postgres-specific
+constraint that belongs in the migration layer, not in the dialect-agnostic ORM definition.
+
+`DogProfileHistory.dog_profile_id` is declared as a plain `Column(String(36))` in the ORM.
+The FK constraint (`ON DELETE RESTRICT`) is added via `op.create_foreign_key()` in the Alembic
+migration script. This keeps all schema constraints managed in one place — Alembic — rather
+than split between ORM model declarations and migration scripts.
+
+The ORM model describes the shape of the data. The migration layer describes the constraints
+and indexes. Keeping them separate means: if you ever need to change the constraint (e.g.,
+switch from RESTRICT to CASCADE), you write a new migration — you don't touch the model.
