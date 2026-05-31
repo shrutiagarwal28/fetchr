@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this project does
 
-fetchr is a CLI scraper that pulls dog adoption listings from PetFinder into a local SQLite database. It uses a headless Chromium browser (Playwright) because PetFinder renders via JavaScript.
+fetchr is a CLI scraper that pulls dog adoption listings from PetFinder into a local Postgres database. It uses a headless Chromium browser (Playwright) because PetFinder renders via JavaScript.
 
 ## Running the scraper
 
@@ -19,7 +19,7 @@ python3 main.py scrape --source petfinder --max 10
 python3 main.py scrape --source petfinder --max 10 --no-headless
 
 # Inspect results
-sqlite3 fetchr.db "SELECT name, breed_primary, city, status FROM dog_profiles LIMIT 10;"
+psql fetchr -c "SELECT name, breed_primary, city, status FROM dog_profiles LIMIT 10;"
 ```
 
 ## Setup (first time)
@@ -91,7 +91,7 @@ props.pageProps.animal
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `DB_PATH` | `fetchr.db` | SQLite file location |
+| `DATABASE_URL` | *(required — no default)* | Postgres connection string, e.g. `postgresql://postgres:postgres@localhost:5432/fetchr` |
 | `JSON_PATH` | `fetchr.json` | JSON export path (written after every scrape run) |
 | `PETFINDER_LOCATION` | `nj/jersey-city` | Search location as `{state}/{city}` — overridden by `--location` CLI arg |
 | `USER_AGENT` | Chrome 124 on macOS | Browser UA string |
