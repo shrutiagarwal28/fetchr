@@ -37,14 +37,41 @@ python main.py scrape --source all --max 200
 
 ## Database
 
-Results are stored in `fetchr.db` (SQLite). Inspect with:
+Results are stored in Postgres. Connection string is set in `.env`:
+
+```
+DATABASE_URL=postgresql://shruti@localhost:5432/fetchr
+```
+
+Inspect from the terminal:
 
 ```bash
-sqlite3 fetchr.db "SELECT name, breed_primary, city, status FROM dog_profiles LIMIT 10;"
-sqlite3 fetchr.db "SELECT COUNT(*) FROM dog_profiles;"
+psql fetchr -c "SELECT name, breed_primary, city, status FROM dog_profiles LIMIT 10;"
+psql fetchr -c "SELECT COUNT(*) FROM dog_profiles WHERE deleted_at IS NULL;"
 ```
 
 Re-running the scraper will **update** existing rows (`last_updated_at`) rather than creating duplicates. Deduplication key: `(source, source_id)`.
+
+### TablePlus (GUI)
+
+To browse data visually, connect [TablePlus](https://tableplus.com) with:
+
+| Field | Value |
+|---|---|
+| Host | 127.0.0.1 |
+| Port | 5432 |
+| Database | fetchr |
+| User | shruti |
+| Password | *(leave blank)* |
+
+### Schema setup (first time or after pulling new migrations)
+
+```bash
+createdb fetchr          # create the empty database (once, on a new machine)
+alembic upgrade head     # create/update tables to match the current schema
+```
+
+If you're already running the scraper successfully, you don't need to run these.
 
 ---
 
