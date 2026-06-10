@@ -464,6 +464,7 @@ class PetFinderScraper(BaseScraper):
         org_social_urls: list[str] = org.get("socialUrl") or []
         org_mission_statement = org.get("missionStatement") or None
         org_onsite_vet = org.get("onsiteVet")
+        org_medical_care_provided = org.get("medicalCareProvided")
         org_supports_rehome = org.get("supportsRehome")
         org_spay_neuter_policy = org.get("spayNeuterPolicy") or None
         org_special_services: list[str] = org.get("specialServices") or []
@@ -612,6 +613,7 @@ class PetFinderScraper(BaseScraper):
             org_social_urls=org_social_urls,
             org_mission_statement=org_mission_statement,
             org_onsite_vet=org_onsite_vet,
+            org_medical_care_provided=org_medical_care_provided,
             org_supports_rehome=org_supports_rehome,
             org_spay_neuter_policy=org_spay_neuter_policy,
             org_special_services=org_special_services,

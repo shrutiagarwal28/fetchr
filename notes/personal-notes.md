@@ -243,3 +243,31 @@ Do not use the raw `status` value as a model feature. Derive from it:
 **Adopted dogs are ground truth.** Every dog with `status = 'adopted'` represents a real human choosing that dog. That is your supervised training signal for a future ranking model — the only label you have that means "this was a successful match."
 
 **Hold dogs may carry a signal.** A dog that frequently transitions into `hold` may have behavioral or medical issues that are temporarily being managed. Worth tracking as a feature once enough history accumulates.
+
+--------------------------------
+
+### GraphQL exploration artifacts vs seed data
+
+**Category:** Architecture
+
+**Date:** 2026-06-10
+
+`graphql_breed_list.json` and `petfinder_breeds.json` came from two different GraphQL queries and serve completely different purposes. The intercept script fired a `__schema` introspection query to discover what operations PetFinder's API exposes — the result was `graphql_breed_list.json`, a throwaway map of available query field names. Once `allAnimalAttributes` was discovered from that map, it was queried separately to get the actual 309-breed taxonomy, which was saved as `petfinder_breeds.json`. That file is intentional seed data committed to the repo; `scripts/seed_breeds.py` reads it and does a one-time `INSERT ... ON CONFLICT DO NOTHING` into the `petfinder_breeds` table. The exploration artifact (`graphql_breed_list.json`) is ignored in `.gitignore` — it's regenerated every time the intercept script runs and carries no stable value. The distinction to remember: if a file is *input to a script that populates the DB*, it's seed data and belongs in version control; if it's *output of an exploration run*, it's a debug artifact and belongs in `.gitignore`.
+
+--------------------------------
+
+### Three exploration scripts, three angles
+
+**Category:** Architecture
+
+**Date:** 2026-06-10
+
+Before writing the real scrapers, three one-shot investigation scripts were used to understand where PetFinder's data lives:
+
+```
+explore_listing_next_data.py   → "What does the search page embed?"
+explore_detail_page_props.py   → "What else is on a detail page besides animal?"
+explore_graphql_intercept.py   → "What GraphQL calls does the browser make?"
+```
+
+All three read `__NEXT_DATA__` or intercept network traffic — none are production code. They're run manually when you need to understand data shape before writing a scraper. `explore_listing_next_data.py` dumps the full `__NEXT_DATA__` blob from the search grid page. `explore_detail_page_props.py` navigates to a single dog's detail page and dumps only `props.pageProps` to find what else lives alongside `props.pageProps.animal`. `explore_graphql_intercept.py` attaches Playwright request/response listeners to capture every GraphQL call the browser makes on page load, then fires a schema introspection query to discover available operations. The outputs of all three are gitignored — they're debug snapshots, not source code.

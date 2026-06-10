@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import uuid
 from datetime import datetime, timezone
 from typing import Any, Optional
@@ -61,6 +62,9 @@ logger = logging.getLogger(__name__)
 
 GRAPHQL_URL = "https://psl.petfinder.com/graphql"
 PAGE_SIZE = 20
+
+_CLIENT_ID = os.environ["PETFINDER_CLIENT_ID"]
+_CLIENT_SECRET = os.environ["PETFINDER_CLIENT_SECRET"]
 
 # GraphQL query sent from inside the browser via page.evaluate().
 # Requests only the fields available on the search card — not detail-page fields.
@@ -331,8 +335,8 @@ class PetFinderExploreScraper(BaseScraper):
                         method: 'POST',
                         headers: {{
                             'Content-Type': 'application/json',
-                            'x-client-id': '0K3buVjVqhUvdoU6UVpbN0zejPhQcaUzt6mLcU6SSBfcxqCnj9',
-                            'x-client-secret': 'cGTWvL3IY9boTC6VNcKCdTlVB1l5UPaXmd4xsJhp',
+                            'x-client-id': '{_CLIENT_ID}',
+                            'x-client-secret': '{_CLIENT_SECRET}',
                         }},
                         body: {json.dumps(query_payload)},
                     }});
