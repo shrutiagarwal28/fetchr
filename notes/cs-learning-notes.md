@@ -140,3 +140,16 @@ into git alongside the code changes that require them. This means a deploy is al
 `git pull` → `alembic upgrade head` → start the app, in that order, and any schema
 rollback is `alembic downgrade -1` rather than a manual ALTER TABLE. The alternative —
 `create_all()` at startup — doesn't scale past the first schema change."
+
+---
+
+## SQLAlchemy: Shared `Base` — Interview Revision Note
+
+All ORM models must inherit from the **same** `DeclarativeBase` instance so Alembic can
+see them in one metadata graph. In this project `Base` is created in `models/dog.py` and
+imported by `models/reference.py` — that's why the comment says "all three share the
+same Base." If you accidentally create a second `Base` in another file, those tables
+silently disappear from `alembic revision --autogenerate`.
+
+**Q: "How do you ensure Alembic tracks all your models?"**
+→ One shared `Base`, `target_metadata = Base.metadata` in `alembic/env.py`.

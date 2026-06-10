@@ -41,11 +41,17 @@ CARD_SELECTORS = [
     "a[href*='/dog/']",
 ]
 
-# Map PetFinder's adoption status labels → our enum
+# Map PetFinder's adoption status labels → our internal labels.
+# All 6 canonical PetFinder statuses are listed explicitly (confirmed via
+# AllAnimalAttributes GraphQL response — this is a dropdown field, not free text,
+# so these 6 values are exhaustive).
 STATUS_MAP = {
     "adoptable": "available",
     "pending": "pending",
     "adopted": "adopted",
+    "hold": "hold",
+    "found": "found",
+    "other": "other",
 }
 
 
@@ -520,7 +526,10 @@ class PetFinderScraper(BaseScraper):
         # --- Adoption / status (animal.residency) ---
         residency: dict = animal.get("residency") or {}
         raw_status = (residency.get("adoptionStatus") or "").lower()
-        status = STATUS_MAP.get(raw_status, "available")
+        status = STATUS_MAP.get(raw_status)
+        if status is None:
+            logger.warning("Unrecognized adoptionStatus %r at %s — PetFinder may have added a new status. Storing raw value.", raw_status, url)
+            status = raw_status or "unknown"
         adoption_fee = residency.get("adoptionFee")
         adoption_fee_waived = residency.get("adoptionFeeWaived")
         display_adoption_fee = residency.get("displayAdoptionFee")

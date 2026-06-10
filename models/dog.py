@@ -58,6 +58,11 @@ class DogProfile(BaseModel):
     import_updates_enabled: Optional[bool] = None  # importUpdatesEnabled
     import_deletes_enabled: Optional[bool] = None  # importDeletesEnabled
 
+    # --- PetFinder backend metadata (from SearchAnimal card response meta block) ---
+    record_status: Optional[str] = None            # meta.recordStatus e.g. "published"
+    petfinder_created_at: Optional[datetime] = None  # meta.create.time — when PetFinder first created the record
+    petfinder_updated_at: Optional[datetime] = None  # meta.update.time — PetFinder's own last-modified timestamp
+
     # --- Physical ---
     breed_primary: str
     breed_secondary: Optional[str] = None
@@ -136,6 +141,7 @@ class DogProfile(BaseModel):
     org_employee_count: Optional[int] = None   # _organization.employeeCount
     org_volunteer_count: Optional[int] = None  # _organization.volunteerCount
     org_display_id: Optional[str] = None       # _organization.displayId e.g. "NJ708"
+    org_animal_id: Optional[str] = None        # organization.organizationAnimalId — shelter's own kennel ID for this dog e.g. "SSRD-A-2483"
 
     # --- Contact ---
     contact_id: Optional[str] = None           # _contact.contactId
@@ -157,7 +163,7 @@ class DogProfile(BaseModel):
     sponsor_a_pet_url: Optional[str] = None       # sponsorAPetUrl.url
 
     # --- Adoption / status ---
-    status: str = "available"               # our normalized label: available | pending | adopted
+    status: str = "available"               # our normalized label: available | pending | adopted | hold | found | other
     adoption_fee: Optional[int] = None      # residency.adoptionFee
     adoption_fee_waived: Optional[bool] = None   # residency.adoptionFeeWaived
     display_adoption_fee: Optional[bool] = None  # residency.displayAdoptionFee
@@ -171,6 +177,7 @@ class DogProfile(BaseModel):
 
     first_seen_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     last_updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    detail_scraped_at: Optional[datetime] = None  # set by detail scraper on successful page visit; None means deep fields not yet populated
 
 
 # ---------------------------------------------------------------------------
@@ -196,6 +203,11 @@ class DogORM(Base):
     out_of_town = Column(Boolean, nullable=True)
     import_updates_enabled = Column(Boolean, nullable=True)
     import_deletes_enabled = Column(Boolean, nullable=True)
+
+    # PetFinder backend metadata
+    record_status = Column(String(50), nullable=True)
+    petfinder_created_at = Column(DateTime(timezone=True), nullable=True)
+    petfinder_updated_at = Column(DateTime(timezone=True), nullable=True)
 
     # Physical
     breed_primary = Column(String(255), nullable=False)
@@ -275,6 +287,7 @@ class DogORM(Base):
     org_employee_count = Column(Float, nullable=True)
     org_volunteer_count = Column(Float, nullable=True)
     org_display_id = Column(String(50), nullable=True)
+    org_animal_id = Column(String(100), nullable=True)
 
     # Contact
     contact_id = Column(String(36), nullable=True)
@@ -310,6 +323,7 @@ class DogORM(Base):
 
     first_seen_at = Column(DateTime(timezone=True), nullable=False)
     last_updated_at = Column(DateTime(timezone=True), nullable=False)
+    detail_scraped_at = Column(DateTime(timezone=True), nullable=True)
 
     # Soft delete — set by mark_deleted(), never by the scraper.
     # Dogs are never hard-deleted; set deleted_at to hide from active queries.

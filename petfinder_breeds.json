@@ -1,0 +1,1861 @@
+{
+  "source": "PetFinder GraphQL — allAnimalAttributes query, speciesList[dog].primaryBreeds",
+  "scraped_at": "2026-06-02",
+  "count": 309,
+  "breeds": [
+    {
+      "id": 172,
+      "alternateId": "affenpinscher",
+      "name": "Affenpinscher",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 173,
+      "alternateId": "afghan_hound",
+      "name": "Afghan Hound",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 174,
+      "alternateId": "airedale_terrier",
+      "name": "Airedale Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 175,
+      "alternateId": "akbash",
+      "name": "Akbash",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 176,
+      "alternateId": "akita",
+      "name": "Akita",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 177,
+      "alternateId": "alaskan_malamute",
+      "name": "Alaskan Malamute",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 178,
+      "alternateId": "american_bulldog",
+      "name": "American Bulldog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 179,
+      "alternateId": "american_eskimo_dog",
+      "name": "American Eskimo Dog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 180,
+      "alternateId": "american_hairless_terrier",
+      "name": "American Hairless Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 181,
+      "alternateId": "american_staffordshire_terrier",
+      "name": "American Staffordshire Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 182,
+      "alternateId": "american_water_spaniel",
+      "name": "American Water Spaniel",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 183,
+      "alternateId": "anatolian_shepherd",
+      "name": "Anatolian Shepherd",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 184,
+      "alternateId": "appenzell_mountain_dog",
+      "name": "Appenzell Mountain Dog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 185,
+      "alternateId": "australian_cattle_dog_blue_heeler",
+      "name": "Australian Cattle Dog / Blue Heeler",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 186,
+      "alternateId": "australian_kelpie",
+      "name": "Australian Kelpie",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 187,
+      "alternateId": "australian_shepherd",
+      "name": "Australian Shepherd",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 188,
+      "alternateId": "australian_terrier",
+      "name": "Australian Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 189,
+      "alternateId": "basenji",
+      "name": "Basenji",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 190,
+      "alternateId": "basset_hound",
+      "name": "Basset Hound",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 191,
+      "alternateId": "beagle",
+      "name": "Beagle",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 192,
+      "alternateId": "bearded_collie",
+      "name": "Bearded Collie",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 193,
+      "alternateId": "beauceron",
+      "name": "Beauceron",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 194,
+      "alternateId": "bedlington_terrier",
+      "name": "Bedlington Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 195,
+      "alternateId": "belgian_shepherd_sheepdog",
+      "name": "Belgian Shepherd / Sheepdog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 196,
+      "alternateId": "belgian_shepherd_laekenois",
+      "name": "Belgian Shepherd / Laekenois",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 197,
+      "alternateId": "belgian_shepherd_malinois",
+      "name": "Belgian Shepherd / Malinois",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 198,
+      "alternateId": "belgian_shepherd_tervuren",
+      "name": "Belgian Shepherd / Tervuren",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 199,
+      "alternateId": "bernese_mountain_dog",
+      "name": "Bernese Mountain Dog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 200,
+      "alternateId": "bichon_frise",
+      "name": "Bichon Frise",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 201,
+      "alternateId": "black_and_tan_coonhound",
+      "name": "Black and Tan Coonhound",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 202,
+      "alternateId": "black_labrador_retriever",
+      "name": "Black Labrador Retriever",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 203,
+      "alternateId": "black_mouth_cur",
+      "name": "Black Mouth Cur",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 204,
+      "alternateId": "black_russian_terrier",
+      "name": "Black Russian Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 205,
+      "alternateId": "bloodhound",
+      "name": "Bloodhound",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 206,
+      "alternateId": "blue_lacy",
+      "name": "Blue Lacy",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 207,
+      "alternateId": "bluetick_coonhound",
+      "name": "Bluetick Coonhound",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 208,
+      "alternateId": "boerboel",
+      "name": "Boerboel",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 209,
+      "alternateId": "bolognese",
+      "name": "Bolognese",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 210,
+      "alternateId": "border_collie",
+      "name": "Border Collie",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 211,
+      "alternateId": "border_terrier",
+      "name": "Border Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 212,
+      "alternateId": "borzoi",
+      "name": "Borzoi",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 213,
+      "alternateId": "boston_terrier",
+      "name": "Boston Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 214,
+      "alternateId": "bouvier_des_flandres",
+      "name": "Bouvier des Flandres",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 215,
+      "alternateId": "boxer",
+      "name": "Boxer",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 216,
+      "alternateId": "boykin_spaniel",
+      "name": "Boykin Spaniel",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 217,
+      "alternateId": "briard",
+      "name": "Briard",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 218,
+      "alternateId": "brittany_spaniel",
+      "name": "Brittany Spaniel",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 219,
+      "alternateId": "brussels_griffon",
+      "name": "Brussels Griffon",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 220,
+      "alternateId": "bull_terrier",
+      "name": "Bull Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 221,
+      "alternateId": "bullmastiff",
+      "name": "Bullmastiff",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 222,
+      "alternateId": "cairn_terrier",
+      "name": "Cairn Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 223,
+      "alternateId": "canaan_dog",
+      "name": "Canaan Dog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 224,
+      "alternateId": "cane_corso",
+      "name": "Cane Corso",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 225,
+      "alternateId": "carolina_dog",
+      "name": "Carolina Dog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 226,
+      "alternateId": "catahoula_leopard_dog",
+      "name": "Catahoula Leopard Dog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 227,
+      "alternateId": "cattle_dog",
+      "name": "Cattle Dog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 228,
+      "alternateId": "caucasian_sheepdog_caucasian_ovtcharka",
+      "name": "Caucasian Sheepdog / Caucasian Ovtcharka",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 229,
+      "alternateId": "cavalier_king_charles_spaniel",
+      "name": "Cavalier King Charles Spaniel",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 230,
+      "alternateId": "chesapeake_bay_retriever",
+      "name": "Chesapeake Bay Retriever",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 231,
+      "alternateId": "chihuahua",
+      "name": "Chihuahua",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 232,
+      "alternateId": "chinese_crested_dog",
+      "name": "Chinese Crested Dog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 233,
+      "alternateId": "chinese_foo_dog",
+      "name": "Chinese Foo Dog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 234,
+      "alternateId": "chinook",
+      "name": "Chinook",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 235,
+      "alternateId": "chocolate_labrador_retriever",
+      "name": "Chocolate Labrador Retriever",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 236,
+      "alternateId": "chow_chow",
+      "name": "Chow Chow",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 237,
+      "alternateId": "cirneco_dell'etna",
+      "name": "Cirneco dell'Etna",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 238,
+      "alternateId": "clumber_spaniel",
+      "name": "Clumber Spaniel",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 239,
+      "alternateId": "cockapoo",
+      "name": "Cockapoo",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 240,
+      "alternateId": "cocker_spaniel",
+      "name": "Cocker Spaniel",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 241,
+      "alternateId": "collie",
+      "name": "Collie",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 242,
+      "alternateId": "coonhound",
+      "name": "Coonhound",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 243,
+      "alternateId": "corgi",
+      "name": "Corgi",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 244,
+      "alternateId": "coton_de_tulear",
+      "name": "Coton de Tulear",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 245,
+      "alternateId": "curly_coated_retriever",
+      "name": "Curly-Coated Retriever",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 246,
+      "alternateId": "dachshund",
+      "name": "Dachshund",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 247,
+      "alternateId": "dalmatian",
+      "name": "Dalmatian",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 248,
+      "alternateId": "dandie_dinmont_terrier",
+      "name": "Dandie Dinmont Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 249,
+      "alternateId": "doberman_pinscher",
+      "name": "Doberman Pinscher",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 250,
+      "alternateId": "dogo_argentino",
+      "name": "Dogo Argentino",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 251,
+      "alternateId": "dogue_de_bordeaux",
+      "name": "Dogue de Bordeaux",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 252,
+      "alternateId": "dutch_shepherd",
+      "name": "Dutch Shepherd",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 253,
+      "alternateId": "english_bulldog",
+      "name": "English Bulldog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 254,
+      "alternateId": "english_cocker_spaniel",
+      "name": "English Cocker Spaniel",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 255,
+      "alternateId": "english_coonhound",
+      "name": "English Coonhound",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 256,
+      "alternateId": "english_pointer",
+      "name": "English Pointer",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 257,
+      "alternateId": "english_setter",
+      "name": "English Setter",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 258,
+      "alternateId": "english_shepherd",
+      "name": "English Shepherd",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 259,
+      "alternateId": "english_springer_spaniel",
+      "name": "English Springer Spaniel",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 260,
+      "alternateId": "english_toy_spaniel",
+      "name": "English Toy Spaniel",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 261,
+      "alternateId": "entlebucher",
+      "name": "Entlebucher",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 262,
+      "alternateId": "eskimo_dog",
+      "name": "Eskimo Dog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 263,
+      "alternateId": "feist",
+      "name": "Feist",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 264,
+      "alternateId": "field_spaniel",
+      "name": "Field Spaniel",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 265,
+      "alternateId": "fila_brasileiro",
+      "name": "Fila Brasileiro",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 266,
+      "alternateId": "finnish_lapphund",
+      "name": "Finnish Lapphund",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 267,
+      "alternateId": "finnish_spitz",
+      "name": "Finnish Spitz",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 268,
+      "alternateId": "flat_coated_retriever",
+      "name": "Flat-Coated Retriever",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 269,
+      "alternateId": "fox_terrier",
+      "name": "Fox Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 270,
+      "alternateId": "foxhound",
+      "name": "Foxhound",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 271,
+      "alternateId": "french_bulldog",
+      "name": "French Bulldog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 272,
+      "alternateId": "galgo_spanish_greyhound",
+      "name": "Galgo Spanish Greyhound",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 273,
+      "alternateId": "german_pinscher",
+      "name": "German Pinscher",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 274,
+      "alternateId": "german_shepherd_dog",
+      "name": "German Shepherd Dog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 275,
+      "alternateId": "german_shorthaired_pointer",
+      "name": "German Shorthaired Pointer",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 276,
+      "alternateId": "german_spitz",
+      "name": "German Spitz",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 277,
+      "alternateId": "german_wirehaired_pointer",
+      "name": "German Wirehaired Pointer",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 278,
+      "alternateId": "giant_schnauzer",
+      "name": "Giant Schnauzer",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 279,
+      "alternateId": "glen_of_imaal_terrier",
+      "name": "Glen of Imaal Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 280,
+      "alternateId": "golden_retriever",
+      "name": "Golden Retriever",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 281,
+      "alternateId": "gordon_setter",
+      "name": "Gordon Setter",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 282,
+      "alternateId": "great_dane",
+      "name": "Great Dane",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 283,
+      "alternateId": "great_pyrenees",
+      "name": "Great Pyrenees",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 284,
+      "alternateId": "greater_swiss_mountain_dog",
+      "name": "Greater Swiss Mountain Dog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 285,
+      "alternateId": "greyhound",
+      "name": "Greyhound",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 286,
+      "alternateId": "harrier",
+      "name": "Harrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 287,
+      "alternateId": "havanese",
+      "name": "Havanese",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 288,
+      "alternateId": "hound",
+      "name": "Hound",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 289,
+      "alternateId": "hovawart",
+      "name": "Hovawart",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 290,
+      "alternateId": "husky",
+      "name": "Husky",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 291,
+      "alternateId": "ibizan_hound",
+      "name": "Ibizan Hound",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 292,
+      "alternateId": "illyrian_sheepdog",
+      "name": "Illyrian Sheepdog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 293,
+      "alternateId": "irish_setter",
+      "name": "Irish Setter",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 294,
+      "alternateId": "irish_terrier",
+      "name": "Irish Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 295,
+      "alternateId": "irish_water_spaniel",
+      "name": "Irish Water Spaniel",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 296,
+      "alternateId": "irish_wolfhound",
+      "name": "Irish Wolfhound",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 297,
+      "alternateId": "italian_greyhound",
+      "name": "Italian Greyhound",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 298,
+      "alternateId": "spinone_italiano",
+      "name": "Spinone Italiano",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 299,
+      "alternateId": "jack_russell_terrier",
+      "name": "Jack Russell Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 300,
+      "alternateId": "parson_russell_terrier",
+      "name": "Parson Russell Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 301,
+      "alternateId": "japanese_chin",
+      "name": "Japanese Chin",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 302,
+      "alternateId": "jindo",
+      "name": "Jindo",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 303,
+      "alternateId": "kai_dog",
+      "name": "Kai Dog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 304,
+      "alternateId": "karelian_bear_dog",
+      "name": "Karelian Bear Dog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 305,
+      "alternateId": "keeshond",
+      "name": "Keeshond",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 306,
+      "alternateId": "kerry_blue_terrier",
+      "name": "Kerry Blue Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 307,
+      "alternateId": "kishu",
+      "name": "Kishu",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 308,
+      "alternateId": "klee_kai",
+      "name": "Klee Kai",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 309,
+      "alternateId": "komondor",
+      "name": "Komondor",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 310,
+      "alternateId": "kuvasz",
+      "name": "Kuvasz",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 311,
+      "alternateId": "kyi_leo",
+      "name": "Kyi Leo",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 312,
+      "alternateId": "labrador_retriever",
+      "name": "Labrador Retriever",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 313,
+      "alternateId": "lakeland_terrier",
+      "name": "Lakeland Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 314,
+      "alternateId": "lancashire_heeler",
+      "name": "Lancashire Heeler",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 315,
+      "alternateId": "leonberger",
+      "name": "Leonberger",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 316,
+      "alternateId": "lhasa_apso",
+      "name": "Lhasa Apso",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 317,
+      "alternateId": "lowchen",
+      "name": "Lowchen",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 318,
+      "alternateId": "maltese",
+      "name": "Maltese",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 319,
+      "alternateId": "manchester_terrier",
+      "name": "Manchester Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 320,
+      "alternateId": "maremma_sheepdog",
+      "name": "Maremma Sheepdog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 321,
+      "alternateId": "mastiff",
+      "name": "Mastiff",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 322,
+      "alternateId": "mcnab",
+      "name": "McNab",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 323,
+      "alternateId": "miniature_pinscher",
+      "name": "Miniature Pinscher",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 324,
+      "alternateId": "mountain_cur",
+      "name": "Mountain Cur",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 325,
+      "alternateId": "mountain_dog",
+      "name": "Mountain Dog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 326,
+      "alternateId": "munsterlander",
+      "name": "Munsterlander",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 327,
+      "alternateId": "neapolitan_mastiff",
+      "name": "Neapolitan Mastiff",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 328,
+      "alternateId": "new_guinea_singing_dog",
+      "name": "New Guinea Singing Dog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 329,
+      "alternateId": "newfoundland_dog",
+      "name": "Newfoundland Dog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 330,
+      "alternateId": "norfolk_terrier",
+      "name": "Norfolk Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 331,
+      "alternateId": "norwegian_buhund",
+      "name": "Norwegian Buhund",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 332,
+      "alternateId": "norwegian_elkhound",
+      "name": "Norwegian Elkhound",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 333,
+      "alternateId": "norwegian_lundehund",
+      "name": "Norwegian Lundehund",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 334,
+      "alternateId": "norwich_terrier",
+      "name": "Norwich Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 335,
+      "alternateId": "nova_scotia_duck_tolling_retriever",
+      "name": "Nova Scotia Duck Tolling Retriever",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 336,
+      "alternateId": "old_english_sheepdog",
+      "name": "Old English Sheepdog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 337,
+      "alternateId": "otterhound",
+      "name": "Otterhound",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 338,
+      "alternateId": "papillon",
+      "name": "Papillon",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 339,
+      "alternateId": "patterdale_terrier_fell_terrier",
+      "name": "Patterdale Terrier / Fell Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 340,
+      "alternateId": "pekingese",
+      "name": "Pekingese",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 341,
+      "alternateId": "peruvian_inca_orchid",
+      "name": "Peruvian Inca Orchid",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 342,
+      "alternateId": "petit_basset_griffon_vendeen",
+      "name": "Petit Basset Griffon Vendeen",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 343,
+      "alternateId": "pharaoh_hound",
+      "name": "Pharaoh Hound",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 344,
+      "alternateId": "pit_bull_terrier",
+      "name": "Pit Bull Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 345,
+      "alternateId": "plott_hound",
+      "name": "Plott Hound",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 346,
+      "alternateId": "portuguese_podengo",
+      "name": "Portuguese Podengo",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 347,
+      "alternateId": "pointer",
+      "name": "Pointer",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 348,
+      "alternateId": "polish_lowland_sheepdog",
+      "name": "Polish Lowland Sheepdog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 349,
+      "alternateId": "pomeranian",
+      "name": "Pomeranian",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 350,
+      "alternateId": "poodle",
+      "name": "Poodle",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 351,
+      "alternateId": "portuguese_water_dog",
+      "name": "Portuguese Water Dog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 352,
+      "alternateId": "presa_canario",
+      "name": "Presa Canario",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 353,
+      "alternateId": "pug",
+      "name": "Pug",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 354,
+      "alternateId": "puli",
+      "name": "Puli",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 355,
+      "alternateId": "pumi",
+      "name": "Pumi",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 356,
+      "alternateId": "rat_terrier",
+      "name": "Rat Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 357,
+      "alternateId": "redbone_coonhound",
+      "name": "Redbone Coonhound",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 358,
+      "alternateId": "retriever",
+      "name": "Retriever",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 359,
+      "alternateId": "rhodesian_ridgeback",
+      "name": "Rhodesian Ridgeback",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 360,
+      "alternateId": "rottweiler",
+      "name": "Rottweiler",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 361,
+      "alternateId": "saint_bernard",
+      "name": "Saint Bernard",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 362,
+      "alternateId": "saluki",
+      "name": "Saluki",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 363,
+      "alternateId": "samoyed",
+      "name": "Samoyed",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 364,
+      "alternateId": "sarplaninac",
+      "name": "Sarplaninac",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 365,
+      "alternateId": "schipperke",
+      "name": "Schipperke",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 366,
+      "alternateId": "schnauzer",
+      "name": "Schnauzer",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 367,
+      "alternateId": "scottish_deerhound",
+      "name": "Scottish Deerhound",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 368,
+      "alternateId": "scottish_terrier",
+      "name": "Scottish Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 369,
+      "alternateId": "sealyham_terrier",
+      "name": "Sealyham Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 370,
+      "alternateId": "shar_pei",
+      "name": "Shar-Pei",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 371,
+      "alternateId": "sheep_dog",
+      "name": "Sheep Dog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 372,
+      "alternateId": "shepherd",
+      "name": "Shepherd",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 373,
+      "alternateId": "shetland_sheepdog_sheltie",
+      "name": "Shetland Sheepdog / Sheltie",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 374,
+      "alternateId": "shiba_inu",
+      "name": "Shiba Inu",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 375,
+      "alternateId": "shih_tzu",
+      "name": "Shih Tzu",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 376,
+      "alternateId": "siberian_husky",
+      "name": "Siberian Husky",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 377,
+      "alternateId": "silky_terrier",
+      "name": "Silky Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 378,
+      "alternateId": "skye_terrier",
+      "name": "Skye Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 379,
+      "alternateId": "sloughi",
+      "name": "Sloughi",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 380,
+      "alternateId": "smooth_fox_terrier",
+      "name": "Smooth Fox Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 381,
+      "alternateId": "south_russian_ovtcharka",
+      "name": "South Russian Ovtcharka",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 382,
+      "alternateId": "spaniel",
+      "name": "Spaniel",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 383,
+      "alternateId": "spitz",
+      "name": "Spitz",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 384,
+      "alternateId": "staffordshire_bull_terrier",
+      "name": "Staffordshire Bull Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 385,
+      "alternateId": "standard_poodle",
+      "name": "Standard Poodle",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 386,
+      "alternateId": "sussex_spaniel",
+      "name": "Sussex Spaniel",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 387,
+      "alternateId": "swedish_vallhund",
+      "name": "Swedish Vallhund",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 388,
+      "alternateId": "terrier",
+      "name": "Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 389,
+      "alternateId": "thai_ridgeback",
+      "name": "Thai Ridgeback",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 390,
+      "alternateId": "tibetan_mastiff",
+      "name": "Tibetan Mastiff",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 391,
+      "alternateId": "tibetan_spaniel",
+      "name": "Tibetan Spaniel",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 392,
+      "alternateId": "tibetan_terrier",
+      "name": "Tibetan Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 393,
+      "alternateId": "tosa_inu",
+      "name": "Tosa Inu",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 394,
+      "alternateId": "toy_fox_terrier",
+      "name": "Toy Fox Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 395,
+      "alternateId": "treeing_walker_coonhound",
+      "name": "Treeing Walker Coonhound",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 396,
+      "alternateId": "vizsla",
+      "name": "Vizsla",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 397,
+      "alternateId": "weimaraner",
+      "name": "Weimaraner",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 398,
+      "alternateId": "cardigan_welsh_corgi",
+      "name": "Cardigan Welsh Corgi",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 399,
+      "alternateId": "welsh_springer_spaniel",
+      "name": "Welsh Springer Spaniel",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 400,
+      "alternateId": "welsh_terrier",
+      "name": "Welsh Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 401,
+      "alternateId": "west_highland_white_terrier_westie",
+      "name": "West Highland White Terrier / Westie",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 402,
+      "alternateId": "wheaten_terrier",
+      "name": "Wheaten Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 403,
+      "alternateId": "whippet",
+      "name": "Whippet",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 404,
+      "alternateId": "white_german_shepherd",
+      "name": "White German Shepherd",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 405,
+      "alternateId": "wire_fox_terrier",
+      "name": "Wire Fox Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 406,
+      "alternateId": "wirehaired_pointing_griffon",
+      "name": "Wirehaired Pointing Griffon",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 407,
+      "alternateId": "wirehaired_terrier",
+      "name": "Wirehaired Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 408,
+      "alternateId": "xoloitzcuintli_mexican_hairless",
+      "name": "Xoloitzcuintli / Mexican Hairless",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 409,
+      "alternateId": "yellow_labrador_retriever",
+      "name": "Yellow Labrador Retriever",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 410,
+      "alternateId": "yorkshire_terrier",
+      "name": "Yorkshire Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 678,
+      "alternateId": "setter",
+      "name": "Setter",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 679,
+      "alternateId": "icelandic_sheepdog",
+      "name": "Icelandic Sheepdog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 692,
+      "alternateId": "hamiltonstovare",
+      "name": "Hamiltonstovare",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 693,
+      "alternateId": "miniature_schnauzer",
+      "name": "Miniature Schnauzer",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 694,
+      "alternateId": "mixed_breed",
+      "name": "Mixed Breed",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 695,
+      "alternateId": "rough_collie",
+      "name": "Rough Collie",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 696,
+      "alternateId": "smooth_collie",
+      "name": "Smooth Collie",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 697,
+      "alternateId": "spanish_water_dog",
+      "name": "Spanish Water Dog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 698,
+      "alternateId": "standard_schnauzer",
+      "name": "Standard Schnauzer",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 699,
+      "alternateId": "wirehaired_dachshund",
+      "name": "Wirehaired Dachshund",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 710,
+      "alternateId": "american_foxhound",
+      "name": "American Foxhound",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 711,
+      "alternateId": "miniature_bull_terrier",
+      "name": "Miniature Bull Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 712,
+      "alternateId": "miniature_dachshund",
+      "name": "Miniature Dachshund",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 713,
+      "alternateId": "english_foxhound",
+      "name": "English Foxhound",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 714,
+      "alternateId": "toy_manchester_terrier",
+      "name": "Toy Manchester Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 715,
+      "alternateId": "pembroke_welsh_corgi",
+      "name": "Pembroke Welsh Corgi",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 716,
+      "alternateId": "miniature_poodle",
+      "name": "Miniature Poodle",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 717,
+      "alternateId": "pyrenean_shepherd",
+      "name": "Pyrenean Shepherd",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 719,
+      "alternateId": "american_bully",
+      "name": "American Bully",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 720,
+      "alternateId": "aussiedoodle",
+      "name": "Aussiedoodle",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 721,
+      "alternateId": "bernedoodle",
+      "name": "Bernedoodle",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 722,
+      "alternateId": "cavachon",
+      "name": "Cavachon",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 723,
+      "alternateId": "cavapoo",
+      "name": "Cavapoo",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 724,
+      "alternateId": "chiweenie",
+      "name": "Chiweenie",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 725,
+      "alternateId": "goldendoodle",
+      "name": "Goldendoodle",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 726,
+      "alternateId": "labradoodle",
+      "name": "Labradoodle",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 727,
+      "alternateId": "lurcher",
+      "name": "Lurcher",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 728,
+      "alternateId": "maltipoo",
+      "name": "Maltipoo",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 729,
+      "alternateId": "morkie",
+      "name": "Morkie",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 730,
+      "alternateId": "pomsky",
+      "name": "Pomsky",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 731,
+      "alternateId": "puggle",
+      "name": "Puggle",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 732,
+      "alternateId": "schnoodle",
+      "name": "Schnoodle",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 733,
+      "alternateId": "sheepadoodle",
+      "name": "Sheepadoodle",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 734,
+      "alternateId": "shih_poo",
+      "name": "Shih poo",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 735,
+      "alternateId": "shollie",
+      "name": "Shollie",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 736,
+      "alternateId": "tennessee_treeing_brindle",
+      "name": "Tennessee Treeing Brindle",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 738,
+      "alternateId": "bernadoodle",
+      "name": "Bernadoodle",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 739,
+      "alternateId": "azawakh",
+      "name": "Azawakh",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 740,
+      "alternateId": "barbet",
+      "name": "Barbet",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 741,
+      "alternateId": "bavarian_mountain_hound",
+      "name": "Bavarian Mountain Hound",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 742,
+      "alternateId": "beaglier",
+      "name": "Beaglier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 743,
+      "alternateId": "bergamasco",
+      "name": "Bergamasco",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 744,
+      "alternateId": "borador",
+      "name": "Borador",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 745,
+      "alternateId": "bracco_italiano",
+      "name": "Bracco Italiano",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 746,
+      "alternateId": "bulldog",
+      "name": "Bulldog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 747,
+      "alternateId": "canadian_eskimo_dog",
+      "name": "Canadian Eskimo Dog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 748,
+      "alternateId": "cesky_terrier",
+      "name": "Cesky Terrier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 749,
+      "alternateId": "chorkie",
+      "name": "Chorkie",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 750,
+      "alternateId": "chug",
+      "name": "Chug",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 751,
+      "alternateId": "dachshund_long_haired",
+      "name": "Dachshund (Long Haired)",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 752,
+      "alternateId": "dachshund_miniature_long_haired",
+      "name": "Dachshund (Miniature Long Haired)",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 753,
+      "alternateId": "estrela_mountain_dog",
+      "name": "Estrela Mountain Dog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 754,
+      "alternateId": "eurasier",
+      "name": "Eurasier",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 755,
+      "alternateId": "german_longhaired_pointer",
+      "name": "German Longhaired Pointer",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 756,
+      "alternateId": "goldador",
+      "name": "Goldador",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 757,
+      "alternateId": "japanese_akita_",
+      "name": "Japanese Akita ",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 758,
+      "alternateId": "japanese_spitz",
+      "name": "Japanese Spitz",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 759,
+      "alternateId": "kooikerhoundje",
+      "name": "Kooikerhoundje",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 760,
+      "alternateId": "lagotto_romagnolo",
+      "name": "Lagotto Romagnolo",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 761,
+      "alternateId": "malshi",
+      "name": "Malshi",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 762,
+      "alternateId": "picardy_sheepdog",
+      "name": "Picardy Sheepdog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 763,
+      "alternateId": "pomapoo",
+      "name": "Pomapoo",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 764,
+      "alternateId": "poodle_toy",
+      "name": "Poodle (Toy)",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 765,
+      "alternateId": "russian_toy_dog",
+      "name": "Russian Toy Dog",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 766,
+      "alternateId": "shorkie",
+      "name": "Shorkie",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 767,
+      "alternateId": "swedish_lapphund",
+      "name": "Swedish Lapphund",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 768,
+      "alternateId": "turkish_kangal",
+      "name": "Turkish Kangal",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 769,
+      "alternateId": "wirehaired_vizsla",
+      "name": "Wirehaired Vizsla",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 770,
+      "alternateId": "yorkie_poo",
+      "name": "Yorkie Poo",
+      "__typename": "PrimaryBreeds"
+    },
+    {
+      "id": 771,
+      "alternateId": "zuchon",
+      "name": "Zuchon",
+      "__typename": "PrimaryBreeds"
+    }
+  ]
+}

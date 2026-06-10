@@ -22,7 +22,10 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Point autogenerate at our ORM models so it can diff the schema.
+# All model modules that define ORM classes must be imported here so their
+# classes register on Base.metadata before autogenerate runs.
 from models.dog import Base  # noqa: E402
+import models.reference  # noqa: E402, F401
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,

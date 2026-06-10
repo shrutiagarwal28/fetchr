@@ -24,6 +24,7 @@ from sqlalchemy.orm import sessionmaker, Session as SessionType
 
 from config import DATABASE_URL, JSON_PATH
 from models.dog import Base, DogORM, DogProfile, DogProfileHistory, RawScrape
+from models.reference import BreedSupplySnapshotORM, UrlToVisitORM
 
 logger = logging.getLogger(__name__)
 
@@ -151,6 +152,142 @@ def upsert_dog(session: SessionType, profile: DogProfile) -> str:
         session.rollback()
         logger.exception("Failed to insert dog source_id=%s", profile.source_id)
         return "skipped"
+
+
+# Fields the search scraper (card-level data) is allowed to update.
+# Deliberately excludes detail-page-only fields so a search scraper run
+# never wipes data the detail scraper spent time collecting.
+#
+# Excluded: description, extended_description, media_records, tags,
+#           city, state, zip, listed_at, detail_scraped_at
+_CARD_LIVE_FIELDS: tuple[str, ...] = (
+    "status",
+    "adoption_date",
+    "photos",
+    "personality_traits",
+    "good_with_dogs", "good_with_cats", "good_with_kids", "good_with_other_animals",
+    "house_trained", "activity_level", "requires_fenced_yard", "vaccinated",
+    "shelter_name",
+    "petfinder_created_at", "petfinder_updated_at", "record_status",
+    "org_animal_id",
+)
+
+
+def upsert_card(session: SessionType, profile: DogProfile) -> str:
+    """
+    Insert or update a dog record from search card (GraphQL) data.
+
+    Identical dedup key to upsert_dog — (source, source_id) — but only
+    updates _CARD_LIVE_FIELDS on an existing row. This means a search scraper
+    run never overwrites description, extended_description, media_records, or
+    other detail-page-only fields that upsert_dog populates.
+
+    History archiving only triggers when status changes — that is the
+    operationally meaningful transition worth recording from card data.
+
+    Returns "created", "updated", "unchanged", or "skipped".
+    """
+    existing: DogORM | None = (
+        session.query(DogORM)
+        .filter_by(source=profile.source, source_id=profile.source_id)
+        .first()
+    )
+
+    if existing is not None:
+        changed = any(
+            getattr(existing, f) != getattr(profile, f)
+            for f in _CARD_LIVE_FIELDS
+        )
+        if not changed:
+            existing.last_updated_at = datetime.now(timezone.utc)
+            session.commit()
+            return "unchanged"
+
+        # Archive history only when status changes — the key lifecycle event.
+        if existing.status != profile.status:
+            _archive_snapshot(session, existing)
+
+        for field in _CARD_LIVE_FIELDS:
+            setattr(existing, field, getattr(profile, field))
+        existing.last_updated_at = datetime.now(timezone.utc)
+        session.commit()
+        return "updated"
+
+    row = DogORM(**profile.model_dump())
+    session.add(row)
+    try:
+        session.commit()
+        return "created"
+    except Exception:
+        session.rollback()
+        logger.exception("Failed to insert dog source_id=%s", profile.source_id)
+        return "skipped"
+
+
+def queue_for_detail_visit(
+    session: SessionType,
+    source: str,
+    source_id: str,
+    source_url: str,
+    reason: str,
+) -> None:
+    """
+    Add or refresh a dog in the urls_to_visit queue.
+
+    If the dog is already queued (unique constraint on source + source_id),
+    the existing row is updated with the latest queued_at and reason so the
+    detail scraper always processes the most recent trigger.
+
+    reason: 'new' — dog not yet in dog_profiles
+            'updated' — petfinder_updated_at advanced since last detail visit
+    """
+    from sqlalchemy.dialects.postgresql import insert as pg_insert
+
+    stmt = (
+        pg_insert(UrlToVisitORM)
+        .values(
+            id=str(uuid.uuid4()),
+            source=source,
+            source_id=source_id,
+            source_url=source_url,
+            queued_at=datetime.now(timezone.utc),
+            reason=reason,
+        )
+        .on_conflict_do_update(
+            constraint="uq_urls_to_visit_source_source_id",
+            set_={
+                "source_url": source_url,
+                "queued_at": datetime.now(timezone.utc),
+                "reason": reason,
+            },
+        )
+    )
+    session.execute(stmt)
+
+
+def dequeue_detail_visit(
+    session: SessionType, source: str, source_id: str
+) -> None:
+    """
+    Remove a dog from the urls_to_visit queue after a successful detail visit.
+    Called by the detail scraper immediately after stamping detail_scraped_at.
+    """
+    session.query(UrlToVisitORM).filter_by(
+        source=source, source_id=source_id
+    ).delete()
+
+
+def stamp_detail_scraped_at(
+    session: SessionType, source: str, source_id: str
+) -> None:
+    """
+    Record that the detail scraper successfully visited and parsed this dog's
+    detail page. Only called on success — a failed visit leaves this null
+    so the dog stays in the queue and is retried on the next run.
+    """
+    session.query(DogORM).filter_by(source=source, source_id=source_id).update(
+        {"detail_scraped_at": datetime.now(timezone.utc)}
+    )
 
 
 def mark_deleted(
