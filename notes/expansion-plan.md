@@ -91,3 +91,23 @@ At commercial scale, scrapers break silently. Needed from day one:
 3. **Add a second scraper source** — proves the multi-source abstraction works before investing in the queue
 4. **Add Celery + Redis** — only after the multi-source pattern is solid
 5. **Add the features table** — when the ML side defines what features it needs
+
+---
+
+## Schema Normalization To-Dos
+
+- [ ] **Extract `organizations` table** — `dog_profiles` currently has 20+ org fields (`shelter_name`, `org_type`, `org_website`, `org_mission_statement`, `org_onsite_vet`, `org_foster_count`, `org_employee_count`, etc.) that are functionally dependent on `org_id`, not on the dog. Two dogs from the same shelter duplicate all 20 values. Proper fix: create an `organizations` table with `org_id` as PK, move all org fields there, replace them in `dog_profiles` with a single `org_id` FK. `org_animal_id` (the shelter's internal kennel number for a specific dog) stays on `dog_profiles`. Do this as a single dedicated migration — do not split org fields across two tables as a stopgap.
+
+---
+
+## Feature Derivation To-Dos
+
+These features cannot be scraped — they must be derived from data we already have. The `dog_profile_history` table makes all of them possible because it archives every status transition with a timestamp, allowing full timeline reconstruction per dog.
+
+- [ ] **`days_to_adoption`** — for every dog where `status = 'adopted'`, compute `adoption_date - listed_at`. Gives a per-dog adoption speed metric. Aggregate by breed to get a demand signal: breeds that get adopted in 3 days are in high demand; breeds that sit for 90 days are oversupplied.
+
+- [ ] **`went_pending_count`** — for each dog, count the number of `available → pending` transitions in `dog_profile_history`. Each transition means a real human submitted an application. A dog with 4 pending transitions is far more desirable than one with 0, even if both are currently available.
+
+- [ ] **`returned_from_pending`** — Boolean flag: does the dog have a `pending → available` transition in history? This means an application was submitted but fell through. A soft negative signal — worth knowing when ranking.
+
+- [ ] **`is_known_history`** — derived from `intake_type` or `status` at first scrape. Dogs whose first-seen status was `found` are strays with no behavioral history on record. Flag them so the matching model doesn't rely on behavior fields that were never filled in.

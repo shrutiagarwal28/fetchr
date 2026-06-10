@@ -1,6 +1,6 @@
 # Personal Notes — fetchr
 
-Notes saved during development. Use `/save-note` to add entries.
+      Notes saved during development. Use `/save-note` to add entries.
 
 ---
 
@@ -192,3 +192,54 @@ The first step when asked to "add ML" is not touching ML — it's problem framin
 Run this in a notebook — pandas `value_counts()` + null counts. The output tells you which fields are usable as features and which are too sparse to trust.
 
 **Why this order matters:** The most common junior mistake is jumping to model selection before knowing if the data supports it. If `good_with_kids` is null for 70% of dogs, it's noise, not a feature. The audit also tells you whether you need ML at all — a SQL query with boolean filters may return a ranked list in milliseconds with zero model complexity. ML earns its complexity only when the matching is fuzzy or semantic.
+
+---
+
+### Two-scraper model: why petfinder.py should not blindly revisit every dog
+
+We run two scrapers against PetFinder:
+- `petfinder_search.py` — hourly, GraphQL-based, high volume, gets card-level data and breed supply snapshots
+- `petfinder.py` — daily, detail-page-based, gets deep fields (`extended_description`, full org bio, full media records)
+
+Once the detail scraper has visited a dog and captured its deep fields, those fields rarely change. Blindly revisiting every dog every day wastes page loads, increases bot-detection risk, and produces no new data.
+
+**The smart trigger:** only visit a detail page when PetFinder itself says the record changed. `petfinder_updated_at` (written by the search scraper from `meta.update.time`) is PetFinder's own backend last-modified timestamp. `detail_scraped_at` (written only by the detail scraper on a successful visit) records when we last did a full detail visit. The comparison is:
+
+```python
+should_visit = petfinder_updated_at > detail_scraped_at
+```
+
+If `petfinder_updated_at` has advanced past `detail_scraped_at`, PetFinder updated the record after our last detail visit — go fetch it. Otherwise skip.
+
+**Why `detail_scraped_at` and not `last_updated_at`:** `last_updated_at` is a generic "last touched by anything" timestamp — both scrapers bump it. If we used it for this comparison, a search scraper upsert would reset the clock and prevent the detail scraper from knowing whether it had already visited. `detail_scraped_at` is owned exclusively by the detail scraper, making the comparison unambiguous.
+
+**Graceful degradation:** if `petfinder_updated_at` is null (search scraper has never run) or `detail_scraped_at` is null (detail scraper has never visited), always visit. The smart skip only kicks in once both scrapers have run at least once for a given dog.
+
+---
+
+### Adoption status — pipeline state, not a category or Boolean
+
+`status` has 6 canonical values from PetFinder (confirmed via `AllAnimalAttributes` GraphQL response, 2026-06-02). It is a **dropdown field** in the shelter management dashboard — not free text — so these 6 values are exhaustive. The integer IDs being non-sequential (1, 2, 3, 4, 12, 14) indicate some were retired or added over time.
+
+The field represents a **lifecycle stage**, not a simple category:
+
+```
+Found/Intake → Adoptable → Pending → Adopted
+                   ↕
+                 Hold
+```
+
+Do not use the raw `status` value as a model feature. Derive from it:
+
+| Derived feature | Definition | Use |
+|---|---|---|
+| `is_matchable` | `status == 'available'` | Boolean gate — should this dog appear in recommendations at all |
+| `is_in_pipeline` | `status in ('available', 'pending', 'hold')` | Dog is active but not yet placed |
+| `days_to_adoption` | `adoption_date - listed_at` for adopted dogs | How fast this breed/profile type gets adopted — demand signal per breed |
+| `went_pending_count` | count of `available → pending` transitions in `dog_profile_history` | How many people expressed interest — popularity signal |
+| `returned_from_pending` | `pending → available` transition exists in history | Application fell through — soft negative signal |
+| `is_known_history` | `status != 'found'` at intake | Found/stray dogs have no behavioral history — flag for the model |
+
+**Adopted dogs are ground truth.** Every dog with `status = 'adopted'` represents a real human choosing that dog. That is your supervised training signal for a future ranking model — the only label you have that means "this was a successful match."
+
+**Hold dogs may carry a signal.** A dog that frequently transitions into `hold` may have behavioral or medical issues that are temporarily being managed. Worth tracking as a feature once enough history accumulates.
