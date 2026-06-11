@@ -124,6 +124,8 @@ def _normalize_age(raw: str) -> tuple[str, Optional[float]]:
         return "puppy", None
     if "young" in raw:
         return "young", None
+    if "adult" in raw:
+        return "adult", None
     if "senior" in raw:
         return "senior", None
 

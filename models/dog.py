@@ -129,7 +129,7 @@ class DogProfile(BaseModel):
     org_social_urls: list[str] = []            # _organization.socialUrl
     org_mission_statement: Optional[str] = None  # _organization.missionStatement
     org_onsite_vet: Optional[bool] = None      # _organization.onsiteVet
-    org_medical_care_provided: Optional[bool] = None  # _organization.medicalCareProvided
+    org_medical_care_provided: Optional[str] = None   # _organization.medicalCareProvided — free text, not a boolean
     org_supports_rehome: Optional[bool] = None # _organization.supportsRehome
     org_spay_neuter_policy: Optional[str] = None  # _organization.spayNeuterPolicy
     org_special_services: list[str] = []       # _organization.specialServices
@@ -276,7 +276,7 @@ class DogORM(Base):
     org_social_urls = Column(JSONB, default=list, nullable=False)
     org_mission_statement = Column(Text, nullable=True)
     org_onsite_vet = Column(Boolean, nullable=True)
-    org_medical_care_provided = Column(Boolean, nullable=True)
+    org_medical_care_provided = Column(Text, nullable=True)
     org_supports_rehome = Column(Boolean, nullable=True)
     org_spay_neuter_policy = Column(Text, nullable=True)
     org_special_services = Column(JSONB, default=list, nullable=False)

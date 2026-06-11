@@ -52,8 +52,8 @@ class BaseScraper:
             # playwright-stealth patches navigator properties that headless
             # Chrome exposes (webdriver flag, plugins list, etc.)
             try:
-                from playwright_stealth import stealth_sync
-                stealth_sync(page)
+                from playwright_stealth import Stealth
+                Stealth().apply_stealth_sync(page)
                 logger.debug("Stealth applied to page")
             except ImportError:
                 logger.warning(

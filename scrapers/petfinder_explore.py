@@ -173,10 +173,19 @@ class PetFinderExploreScraper(BaseScraper):
         start_url = _build_start_url(self.location)
 
         logger.info("Loading listing page to establish browser session: %s", start_url)
-        page.goto(start_url, wait_until="domcontentloaded", timeout=60_000)
-        page.wait_for_timeout(3000)
+        # expect_response must be set up BEFORE goto — the page fires GraphQL calls
+        # immediately on load and they can resolve before a post-goto listener registers.
+        try:
+            with page.expect_response(
+                lambda r: "psl.petfinder.com/graphql" in r.url,
+                timeout=30_000,
+            ):
+                page.goto(start_url, wait_until="domcontentloaded", timeout=60_000)
+            logger.info("GraphQL session established — page fired its own query")
+        except Exception:
+            logger.warning("No page GraphQL call seen — falling back to 8s wait")
+            page.wait_for_timeout(8000)
 
-        location_slug = self._build_location_slug()
         total_available = None
         facets_saved = False
         from_page = 0
@@ -195,7 +204,6 @@ class PetFinderExploreScraper(BaseScraper):
                     page,
                     from_page=from_page,
                     page_size=page_size,
-                    location_slug=location_slug,
                     include_facets=not facets_saved,
                 )
 
@@ -288,39 +296,35 @@ class PetFinderExploreScraper(BaseScraper):
             counts["unchanged"], counts["skipped"], counts["errors"],
         )
 
-    def _build_location_slug(self) -> str:
-        """Convert 'nj/jersey-city' env var format to PetFinder's 'us/nj/jerseycity' slug."""
-        parts = self.location.strip("/").split("/", 1)
-        state = parts[0].strip().lower()
-        city = parts[1].strip().lower().replace(" ", "").replace("-", "") if len(parts) > 1 else ""
-        return f"us/{state}/{city}"
-
     def _fire_search_query(
         self,
         page: Page,
         from_page: int,
         page_size: int,
-        location_slug: str,
         include_facets: bool,
     ) -> Optional[dict[str, Any]]:
         """
-        Execute SearchAnimal GraphQL from inside the browser via page.evaluate().
-        Running inside Chromium means the request carries real browser cookies and
-        TLS fingerprint — Akamai WAF lets it through.
+        Execute SearchAnimal GraphQL via page.context.request, which uses the
+        browser's cookie store (including the geo-context cookie set by the page's
+        own getGeoLocation call on load). Location is implicit — it flows from the
+        URL we navigated to, not from a filter parameter.
         """
         variables = {
             "pagination": {"fromPage": from_page, "pageSize": page_size},
             "sort": [{"field": "distance", "order": "ASC"}],
             "filters": {
-                "animalType": "Dog",
-                "locationSlug": location_slug,
+                "animal_type": ["Dog"],
+                "adoption_status": ["ADOPTABLE"],
+                "record_status": ["PUBLISHED"],
+                "out_of_town": None,
+                "point": {"distance": "100mi"},
             },
         }
 
         if include_facets:
             variables["facets"] = {
-                "breeds": {"size": 500},
-                "age": {"size": 10},
+                "breeds": "",
+                "age": "",
             }
 
         query_payload = json.dumps({
@@ -329,20 +333,23 @@ class PetFinderExploreScraper(BaseScraper):
         })
 
         try:
-            result = page.evaluate(f"""
-                async () => {{
-                    const res = await fetch('{GRAPHQL_URL}', {{
-                        method: 'POST',
-                        headers: {{
-                            'Content-Type': 'application/json',
-                            'x-client-id': '{_CLIENT_ID}',
-                            'x-client-secret': '{_CLIENT_SECRET}',
-                        }},
-                        body: {json.dumps(query_payload)},
-                    }});
-                    return await res.json();
-                }}
-            """)
+            # page.context.request makes the HTTP call from Python using the
+            # browser's cookie store — bypasses JavaScript context entirely,
+            # so CSP and window.fetch overrides can't block it.
+            response = page.context.request.fetch(
+                GRAPHQL_URL,
+                method="POST",
+                headers={
+                    "Content-Type": "application/json",
+                    "x-client-id": _CLIENT_ID,
+                    "x-client-secret": _CLIENT_SECRET,
+                    "x-calling-service": "consumer/0.1.0",
+                    "origin": "https://www.petfinder.com",
+                    "referer": "https://www.petfinder.com/",
+                },
+                data=query_payload,
+            )
+            result = response.json()
             return result
         except Exception:
             logger.exception("GraphQL fetch failed on page %d", from_page)
