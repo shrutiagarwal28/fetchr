@@ -264,10 +264,7 @@ class PetFinderScraper(BaseScraper):
                     "Loading listing page for remaining %d slots: %s",
                     remaining, start_url,
                 )
-                if not visited_this_run:
-                    # Haven't navigated yet (queue was empty)
-                    page.goto(start_url, wait_until="domcontentloaded", timeout=60_000)
-
+                page.goto(start_url, wait_until="domcontentloaded", timeout=60_000)
                 card_urls = self._collect_card_urls(page, start_url)
                 # Skip anything already visited from the queue this run
                 card_urls = [u for u in card_urls if u not in visited_this_run][:remaining]

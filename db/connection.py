@@ -19,7 +19,7 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session as SessionType
 
 from config import DATABASE_URL, JSON_PATH
@@ -145,7 +145,6 @@ def upsert_dog(session: SessionType, profile: DogProfile) -> str:
 
     row = DogORM(**profile.model_dump())
     from models.reference import PetFinderBreedORM
-    from sqlalchemy import func as sa_func
     breed_row = session.query(PetFinderBreedORM).filter_by(name=profile.breed_primary).first()
     if breed_row:
         row.breed_canonical_id = breed_row.id
@@ -160,16 +159,18 @@ def upsert_dog(session: SessionType, profile: DogProfile) -> str:
             "with synthetic negative ID. Re-run scripts/seed_breeds.py to reconcile.",
             profile.breed_primary, profile.source_id,
         )
-        min_id = session.query(sa_func.min(PetFinderBreedORM.id)).scalar() or 0
-        synthetic_id = min(min_id, 0) - 1
         slug = profile.breed_primary.lower().replace(" ", "_").replace("/", "_").replace("-", "_")
+        # nextval() is atomic and never re-issued even on rollback, so concurrent
+        # callers never collide. ID is known before the INSERT — no flush() needed.
+        synthetic_id = session.execute(
+            text("SELECT nextval('synthetic_breed_id_seq')")
+        ).scalar()
         session.add(PetFinderBreedORM(
             id=synthetic_id,
             alternate_id=f"auto_{slug}",
             name=profile.breed_primary,
             seeded_at=datetime.now(timezone.utc),
         ))
-        session.flush()
         row.breed_canonical_id = synthetic_id
     session.add(row)
     try:

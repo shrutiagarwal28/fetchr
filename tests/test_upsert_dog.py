@@ -55,12 +55,12 @@ def _make_session() -> SessionType:
     """
     global _engine, _current_session
 
-    url = os.environ.get("TEST_DATABASE_URL", "")
+    url = os.environ.get("DATABASE_URL", "")
     if not url:
         sys.exit(
-            "TEST_DATABASE_URL is not set.\n"
+            "DATABASE_URL is not set.\n"
             "Add it to your .env file:\n"
-            "  TEST_DATABASE_URL=postgresql://shruti@localhost:5432/fetchr_test"
+            "  DATABASE_URL=postgresql://shruti@localhost:5432/fetchr_test"
         )
 
     # Close the previous session so its connection is returned to the pool
@@ -243,7 +243,7 @@ def test_fk_constraint_rejects_bad_profile_id() -> None:
     ))
     try:
         session.commit()
-        assert False, "expected IntegrityError from FK violation — not raised"
+        raise AssertionError("expected IntegrityError from FK violation — not raised")
     except IntegrityError:
         session.rollback()
     print("OK  FK constraint rejects history row with non-existent dog_profile_id")
@@ -262,7 +262,7 @@ def test_restrict_blocks_hard_delete() -> None:
             source="petfinder", source_id="test-dog-001"
         ).delete(synchronize_session=False)
         session.commit()
-        assert False, "expected IntegrityError from ON DELETE RESTRICT — not raised"
+        raise AssertionError("expected IntegrityError from ON DELETE RESTRICT — not raised")
     except IntegrityError:
         session.rollback()
     print("OK  ON DELETE RESTRICT blocks hard delete of dog_profiles row with history")
