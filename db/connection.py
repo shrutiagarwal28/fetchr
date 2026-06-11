@@ -158,15 +158,20 @@ def upsert_dog(session: SessionType, profile: DogProfile) -> str:
 # Deliberately excludes detail-page-only fields so a search scraper run
 # never wipes data the detail scraper spent time collecting.
 #
-# Excluded: description, extended_description, media_records, tags,
-#           city, state, zip, listed_at, detail_scraped_at
+# Excluded from card updates — detail scraper owns these:
+#   description, extended_description, media_records, tags, personality_traits,
+#   city, state, zip, listed_at, detail_scraped_at,
+#   house_trained, activity_level, requires_fenced_yard, vaccinated,
+#   good_with_dogs, good_with_cats, good_with_kids, good_with_other_animals.
+#
+# Behavioral fields are excluded because any PetFinder update to them bumps
+# petfinder_updated_at, which already queues the dog for a full detail visit.
+# Writing them from the card response would archive-then-overwrite on each
+# explore run, generating spurious history entries with no queueing benefit.
 _CARD_LIVE_FIELDS: tuple[str, ...] = (
     "status",
     "adoption_date",
     "photos",
-    "personality_traits",
-    "good_with_dogs", "good_with_cats", "good_with_kids", "good_with_other_animals",
-    "house_trained", "activity_level", "requires_fenced_yard", "vaccinated",
     "shelter_name",
     "petfinder_created_at", "petfinder_updated_at", "record_status",
     "org_animal_id",

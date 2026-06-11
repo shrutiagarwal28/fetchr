@@ -96,7 +96,6 @@ query SearchAnimal(
         houseTrained
         requiresFencedYard
         knowsBasicCommands
-        personalityTraits
         interactions {
           cats
           dogs
@@ -473,7 +472,9 @@ class PetFinderExploreScraper(BaseScraper):
             good_with_dogs=_yn_to_bool(interactions.get("dogs")),
             good_with_cats=_yn_to_bool(interactions.get("cats")),
             good_with_other_animals=_yn_to_bool(interactions.get("otherAnimals")),
-            personality_traits=behavior.get("personalityTraits") or [],
+            # personality_traits intentionally omitted — detail scraper owns this field.
+            # The search API may return a truncated trait list; __NEXT_DATA__ on the
+            # detail page is authoritative. upsert_card does not include this field.
             # Organization (card-level — does not include full org bio/mission)
             shelter_name=org.get("organizationName") or None,
             org_id=org.get("organizationId") or None,
