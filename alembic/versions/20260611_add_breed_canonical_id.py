@@ -26,11 +26,17 @@ def upgrade() -> None:
         sa.Column('breed_canonical_id', sa.Integer(), nullable=True),
     )
 
+    # DISTINCT ON (name) ORDER BY name, id picks the lowest id deterministically
+    # if petfinder_breeds ever has two rows with the same display name.
     op.execute("""
         UPDATE dog_profiles dp
-        SET breed_canonical_id = pb.id
-        FROM petfinder_breeds pb
-        WHERE pb.name = dp.breed_primary
+        SET breed_canonical_id = sub.id
+        FROM (
+            SELECT DISTINCT ON (name) id, name
+            FROM petfinder_breeds
+            ORDER BY name, id
+        ) sub
+        WHERE sub.name = dp.breed_primary
     """)
 
     op.create_foreign_key(

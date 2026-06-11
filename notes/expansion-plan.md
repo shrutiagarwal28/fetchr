@@ -87,10 +87,15 @@ At commercial scale, scrapers break silently. Needed from day one:
 ## Build Priority
 
 1. ~~**Add raw JSON storage**~~ ✓ Done — `raw_scrapes` table exists in `db/connection.py`
-2. **Switch to Postgres** ← current sprint — unblocks everything downstream
-3. **Add a second scraper source** — proves the multi-source abstraction works before investing in the queue
-4. **Add Celery + Redis** — only after the multi-source pattern is solid
-5. **Add the features table** — when the ML side defines what features it needs
+2. ~~**Switch to Postgres**~~ ✓ Done — Alembic-managed schema, JSONB columns, TIMESTAMPTZ, soft deletes, FK constraint
+3. ~~**Two-scraper architecture + verification**~~ ✓ Done — explore scraper (GraphQL), detail scraper (queue-based), `urls_to_visit`, `breed_supply_snapshots`, STATUS_MAP fix; 51 dogs in DB
+4. **Feature engineering** ← next — `dog_features` table; ordinal encodings, three-state booleans, continuous age, breed groups, personality trait multi-hot, temporal features; wire recompute into scrape pipeline
+5. **History-derived features** — `went_pending_count`, `returned_from_pending`, `days_to_adoption`, `is_known_history`; requires scrape history to accumulate before meaningful values
+6. **Schema normalization** — extract `organizations` table; move all 20+ org fields out of `dog_profiles`; replace with `org_id` FK
+7. **Observability** — scrape job metrics (created/updated/skipped per run per source); data freshness alerts; schema drift detection
+8. **Adopter profile + matching algorithm** — design adopter schema; hard filter engine (SQL WHERE on Tier 1 fields); semantic re-ranking (`pgvector` embeddings on `description` + `personality_traits`)
+9. **AdoptaPet scraper** — implement `scrapers/adoptapet.py`; prove `DogProfile` canonical schema absorbs a second source cleanly
+10. **Celery + Redis job queue** — replace sequential scraping with async worker pool; only after multi-source pattern is solid
 
 ---
 
