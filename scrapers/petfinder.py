@@ -25,7 +25,14 @@ from urllib.parse import urljoin
 from playwright.sync_api import Page, TimeoutError as PWTimeoutError
 from sqlalchemy.orm import Session as SessionType
 
-from db.connection import Session, save_raw_scrape, upsert_dog
+from db.connection import (
+    Session,
+    dequeue_detail_visit,
+    fetch_queued_urls,
+    save_raw_scrape,
+    stamp_detail_scraped_at,
+    upsert_dog,
+)
 from models.dog import DogProfile
 from scrapers.base import BaseScraper
 
@@ -196,43 +203,110 @@ class PetFinderScraper(BaseScraper):
 
     def _scrape(self, page: Page) -> None:
         counts = {"fetched": 0, "created": 0, "updated": 0, "unchanged": 0, "skipped": 0, "errors": 0}
+        # Track all URLs visited this run so the listing-page fallback never
+        # re-visits a dog already processed from the queue.
+        visited_this_run: set[str] = set()
 
         start_url = _build_start_url(self.location)
-        logger.info("Loading listing page: %s", start_url)
-        page.goto(start_url, wait_until="domcontentloaded", timeout=60_000)
-
-        card_urls = self._collect_card_urls(page, start_url)
-        card_urls = card_urls[: self.max_results]
-        total = len(card_urls)
-        logger.info("Found %d dog cards to scrape", total)
 
         with Session() as session:
-            for idx, detail_url in enumerate(card_urls, start=1):
+
+            # ------------------------------------------------------------------
+            # Phase 1 — drain the urls_to_visit queue (populated by explore scraper)
+            # ------------------------------------------------------------------
+            queued = fetch_queued_urls(session, self.SOURCE_NAME, limit=self.max_results)
+            if queued:
+                logger.info("Queue has %d dogs to visit — processing before listing-page scan", len(queued))
+                # Navigate to the listing page once to establish a browser session
+                # before visiting individual detail pages.
+                page.goto(start_url, wait_until="domcontentloaded", timeout=60_000)
+
+            for source_id, detail_url in queued:
+                if counts["fetched"] >= self.max_results:
+                    break
                 try:
                     profile = self._scrape_detail_page(page, detail_url, session)
                     if profile is None:
                         counts["errors"] += 1
+                        # Leave in queue — failed visits retry on next run.
                         continue
 
                     action = upsert_dog(session, profile)
+                    stamp_detail_scraped_at(session, self.SOURCE_NAME, source_id)
+                    dequeue_detail_visit(session, self.SOURCE_NAME, source_id)
+                    session.commit()
+
                     counts[action] += 1
                     counts["fetched"] += 1
+                    visited_this_run.add(detail_url)
 
                     logger.info(
-                        "Scraped dog %d/%d: %s (%s, %s) [%s]",
-                        idx,
-                        total,
+                        "Queue dog %d: %s (%s, %s) [%s]",
+                        counts["fetched"],
                         profile.name,
                         profile.breed_primary,
                         profile.city or "unknown city",
                         action,
                     )
                 except Exception:
-                    logger.exception("Unhandled error on %s", detail_url)
+                    logger.exception("Unhandled error on queued URL %s", detail_url)
                     counts["errors"] += 1
 
-                if idx < total:
-                    self._random_delay()
+                self._random_delay()
+
+            # ------------------------------------------------------------------
+            # Phase 2 — listing-page fallback for any remaining slots
+            # ------------------------------------------------------------------
+            remaining = self.max_results - counts["fetched"]
+            if remaining <= 0:
+                logger.info("Queue filled max_results=%d — skipping listing-page scan", self.max_results)
+            else:
+                logger.info(
+                    "Loading listing page for remaining %d slots: %s",
+                    remaining, start_url,
+                )
+                if not visited_this_run:
+                    # Haven't navigated yet (queue was empty)
+                    page.goto(start_url, wait_until="domcontentloaded", timeout=60_000)
+
+                card_urls = self._collect_card_urls(page, start_url)
+                # Skip anything already visited from the queue this run
+                card_urls = [u for u in card_urls if u not in visited_this_run][:remaining]
+                total_listing = len(card_urls)
+                logger.info("Found %d new dog cards from listing page", total_listing)
+
+                for idx, detail_url in enumerate(card_urls, start=1):
+                    try:
+                        profile = self._scrape_detail_page(page, detail_url, session)
+                        if profile is None:
+                            counts["errors"] += 1
+                            continue
+
+                        action = upsert_dog(session, profile)
+                        stamp_detail_scraped_at(session, self.SOURCE_NAME, profile.source_id)
+                        # No-op if the dog wasn't queued; cleans up if it was.
+                        dequeue_detail_visit(session, self.SOURCE_NAME, profile.source_id)
+                        session.commit()
+
+                        counts[action] += 1
+                        counts["fetched"] += 1
+                        visited_this_run.add(detail_url)
+
+                        logger.info(
+                            "Listing dog %d/%d: %s (%s, %s) [%s]",
+                            idx,
+                            total_listing,
+                            profile.name,
+                            profile.breed_primary,
+                            profile.city or "unknown city",
+                            action,
+                        )
+                    except Exception:
+                        logger.exception("Unhandled error on %s", detail_url)
+                        counts["errors"] += 1
+
+                    if idx < total_listing:
+                        self._random_delay()
 
         logger.info(
             "Done. fetched=%d created=%d updated=%d unchanged=%d skipped=%d errors=%d",

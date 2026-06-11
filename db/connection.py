@@ -295,6 +295,24 @@ def stamp_detail_scraped_at(
     )
 
 
+def fetch_queued_urls(
+    session: SessionType, source: str, limit: int
+) -> list[tuple[str, str]]:
+    """
+    Return up to `limit` queued detail-visit URLs for the given source,
+    ordered oldest-first. Rows are NOT deleted here — each is removed by
+    dequeue_detail_visit() after the detail scraper confirms success.
+    """
+    rows = (
+        session.query(UrlToVisitORM)
+        .filter_by(source=source)
+        .order_by(UrlToVisitORM.queued_at.asc())
+        .limit(limit)
+        .all()
+    )
+    return [(row.source_id, row.source_url) for row in rows]
+
+
 def mark_deleted(
     session: SessionType,
     source: str,
