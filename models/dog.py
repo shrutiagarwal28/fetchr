@@ -4,8 +4,8 @@ DogProfile — the single source of truth for a scraped dog listing.
 Two representations live here intentionally:
   - DogProfile (Pydantic): validates and normalizes raw scraped strings at
     the boundary, before anything touches the DB.
-  - DogORM (SQLAlchemy): the persistent record. JSON columns store lists
-    (photos, tags) since SQLite has no native array type.
+  - DogORM (SQLAlchemy): the persistent record. List fields use JSONB for
+    native binary storage and GIN-indexable queries on Postgres.
 
 Pattern: Extract → Validate (Pydantic) → Upsert (ORM).
 Classes are ordered to match that pipeline: DogProfile first, then DogORM.
@@ -24,11 +24,12 @@ from sqlalchemy import (
     DateTime,
     Float,
     Index,
-    JSON,
+    Integer,
     String,
     Text,
     UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import DeclarativeBase
 
 
@@ -57,6 +58,11 @@ class DogProfile(BaseModel):
     out_of_town: Optional[bool] = None             # outOfTown
     import_updates_enabled: Optional[bool] = None  # importUpdatesEnabled
     import_deletes_enabled: Optional[bool] = None  # importDeletesEnabled
+
+    # --- PetFinder backend metadata (from SearchAnimal card response meta block) ---
+    record_status: Optional[str] = None            # meta.recordStatus e.g. "published"
+    petfinder_created_at: Optional[datetime] = None  # meta.create.time — when PetFinder first created the record
+    petfinder_updated_at: Optional[datetime] = None  # meta.update.time — PetFinder's own last-modified timestamp
 
     # --- Physical ---
     breed_primary: str
@@ -124,6 +130,7 @@ class DogProfile(BaseModel):
     org_social_urls: list[str] = []            # _organization.socialUrl
     org_mission_statement: Optional[str] = None  # _organization.missionStatement
     org_onsite_vet: Optional[bool] = None      # _organization.onsiteVet
+    org_medical_care_provided: Optional[str] = None   # _organization.medicalCareProvided — free text, not a boolean
     org_supports_rehome: Optional[bool] = None # _organization.supportsRehome
     org_spay_neuter_policy: Optional[str] = None  # _organization.spayNeuterPolicy
     org_special_services: list[str] = []       # _organization.specialServices
@@ -136,6 +143,7 @@ class DogProfile(BaseModel):
     org_employee_count: Optional[int] = None   # _organization.employeeCount
     org_volunteer_count: Optional[int] = None  # _organization.volunteerCount
     org_display_id: Optional[str] = None       # _organization.displayId e.g. "NJ708"
+    org_animal_id: Optional[str] = None        # organization.organizationAnimalId — shelter's own kennel ID for this dog e.g. "SSRD-A-2483"
 
     # --- Contact ---
     contact_id: Optional[str] = None           # _contact.contactId
@@ -157,7 +165,7 @@ class DogProfile(BaseModel):
     sponsor_a_pet_url: Optional[str] = None       # sponsorAPetUrl.url
 
     # --- Adoption / status ---
-    status: str = "available"               # our normalized label: available | pending | adopted
+    status: str = "available"               # our normalized label: available | pending | adopted | hold | found | other
     adoption_fee: Optional[int] = None      # residency.adoptionFee
     adoption_fee_waived: Optional[bool] = None   # residency.adoptionFeeWaived
     display_adoption_fee: Optional[bool] = None  # residency.displayAdoptionFee
@@ -171,6 +179,7 @@ class DogProfile(BaseModel):
 
     first_seen_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     last_updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    detail_scraped_at: Optional[datetime] = None  # set by detail scraper on successful page visit; None means deep fields not yet populated
 
 
 # ---------------------------------------------------------------------------
@@ -197,10 +206,18 @@ class DogORM(Base):
     import_updates_enabled = Column(Boolean, nullable=True)
     import_deletes_enabled = Column(Boolean, nullable=True)
 
+    # PetFinder backend metadata
+    record_status = Column(String(50), nullable=True)
+    petfinder_created_at = Column(DateTime(timezone=True), nullable=True)
+    petfinder_updated_at = Column(DateTime(timezone=True), nullable=True)
+
     # Physical
     breed_primary = Column(String(255), nullable=False)
     breed_secondary = Column(String(255), nullable=True)
     is_mixed = Column(Boolean, default=False, nullable=False)
+    # FK to petfinder_breeds.id — resolved from breed_primary on insert.
+    # Declared without ForeignKey() here; constraint lives in the migration.
+    breed_canonical_id = Column(Integer, nullable=True)
     age_category = Column(String(20), nullable=False)
     age_years_approx = Column(Float, nullable=True)
     age_label = Column(String(50), nullable=True)
@@ -220,7 +237,7 @@ class DogORM(Base):
     vaccinated = Column(Boolean, nullable=True)
     special_needs = Column(Boolean, default=False, nullable=False)
     special_needs_notes = Column(Text, nullable=True)
-    birth_date = Column(DateTime, nullable=True)
+    birth_date = Column(DateTime(timezone=True), nullable=True)
 
     # Behavior
     house_trained = Column(Boolean, nullable=True)
@@ -232,7 +249,7 @@ class DogORM(Base):
     good_with_dogs = Column(Boolean, nullable=True)
     good_with_cats = Column(Boolean, nullable=True)
     good_with_other_animals = Column(Boolean, nullable=True)
-    personality_traits = Column(JSON, default=list, nullable=False)
+    personality_traits = Column(JSONB, default=list, nullable=False)
 
     # Location
     location_id = Column(String(36), nullable=True)
@@ -260,12 +277,13 @@ class DogORM(Base):
     org_type = Column(String(100), nullable=True)
     org_custom_url_alias = Column(String(255), nullable=True)
     org_website = Column(Text, nullable=True)
-    org_social_urls = Column(JSON, default=list, nullable=False)
+    org_social_urls = Column(JSONB, default=list, nullable=False)
     org_mission_statement = Column(Text, nullable=True)
     org_onsite_vet = Column(Boolean, nullable=True)
+    org_medical_care_provided = Column(Text, nullable=True)
     org_supports_rehome = Column(Boolean, nullable=True)
     org_spay_neuter_policy = Column(Text, nullable=True)
-    org_special_services = Column(JSON, default=list, nullable=False)
+    org_special_services = Column(JSONB, default=list, nullable=False)
     org_adoption_url = Column(Text, nullable=True)
     org_adoption_fee_min = Column(Float, nullable=True)
     org_adoption_fee_max = Column(Float, nullable=True)
@@ -275,6 +293,7 @@ class DogORM(Base):
     org_employee_count = Column(Float, nullable=True)
     org_volunteer_count = Column(Float, nullable=True)
     org_display_id = Column(String(50), nullable=True)
+    org_animal_id = Column(String(100), nullable=True)
 
     # Contact
     contact_id = Column(String(36), nullable=True)
@@ -284,14 +303,14 @@ class DogORM(Base):
     contact_phone = Column(String(50), nullable=True)
 
     # Media
-    photos = Column(JSON, default=list, nullable=False)
-    media_records = Column(JSON, default=list, nullable=False)
+    photos = Column(JSONB, default=list, nullable=False)
+    media_records = Column(JSONB, default=list, nullable=False)
 
     # Listing content
     description = Column(Text, nullable=True)
     extended_description = Column(Text, nullable=True)
     petfinder_notes = Column(Text, nullable=True)
-    tags = Column(JSON, default=list, nullable=False)
+    tags = Column(JSONB, default=list, nullable=False)
     petfinder_url = Column(Text, nullable=True)
     sponsor_a_pet_url = Column(Text, nullable=True)
 
@@ -300,16 +319,23 @@ class DogORM(Base):
     adoption_fee = Column(Float, nullable=True)
     adoption_fee_waived = Column(Boolean, nullable=True)
     display_adoption_fee = Column(Boolean, nullable=True)
-    adoption_date = Column(DateTime, nullable=True)
-    adoption_status_change_date = Column(DateTime, nullable=True)
-    intake_date = Column(DateTime, nullable=True)
+    adoption_date = Column(DateTime(timezone=True), nullable=True)
+    adoption_status_change_date = Column(DateTime(timezone=True), nullable=True)
+    intake_date = Column(DateTime(timezone=True), nullable=True)
     intake_type = Column(String(50), nullable=True)
-    transfer_date = Column(DateTime, nullable=True)
+    transfer_date = Column(DateTime(timezone=True), nullable=True)
     transfer_from_org_id = Column(String(36), nullable=True)
-    listed_at = Column(DateTime, nullable=True)
+    listed_at = Column(DateTime(timezone=True), nullable=True)
 
-    first_seen_at = Column(DateTime, nullable=False)
-    last_updated_at = Column(DateTime, nullable=False)
+    first_seen_at = Column(DateTime(timezone=True), nullable=False)
+    last_updated_at = Column(DateTime(timezone=True), nullable=False)
+    detail_scraped_at = Column(DateTime(timezone=True), nullable=True)
+
+    # Soft delete — set by mark_deleted(), never by the scraper.
+    # Dogs are never hard-deleted; set deleted_at to hide from active queries.
+    # Valid reasons: "erroneous" | "delisted_by_source" | "duplicate" | "manual"
+    deleted_at = Column(DateTime(timezone=True), nullable=True)
+    deletion_reason = Column(String(50), nullable=True)
 
 
 # ---------------------------------------------------------------------------
@@ -338,8 +364,8 @@ class RawScrape(Base):
     source = Column(String(50), nullable=False)
     source_id = Column(String(255), nullable=False)
     source_url = Column(Text, nullable=False)
-    scraped_at = Column(DateTime, nullable=False)
-    raw_json = Column(JSON, nullable=False)
+    scraped_at = Column(DateTime(timezone=True), nullable=False)
+    raw_json = Column(JSONB, nullable=False)
 
 
 # ---------------------------------------------------------------------------
@@ -355,8 +381,8 @@ class DogProfileHistory(Base):
     the main dog_profiles row. This gives a full timeline of every state change
     — e.g. adoptable → pending → adopted — without bloating the main table.
 
-    dog_profile_id is a soft FK to dog_profiles.id (no DB-level constraint so
-    SQLite doesn't need foreign-key pragma to be enabled).
+    dog_profile_id references dog_profiles.id. The FK constraint (ON DELETE RESTRICT)
+    is enforced at the DB level via the Alembic migration, not declared in the ORM model.
     """
     __tablename__ = "dog_profile_history"
     __table_args__ = (
@@ -364,20 +390,23 @@ class DogProfileHistory(Base):
     )
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    # DB-level FK to dog_profiles.id enforced via Alembic migration (ON DELETE RESTRICT).
+    # Declared here without ForeignKey() so the constraint lives in the migration layer,
+    # not scattered across ORM models — consistent with how all schema constraints are managed.
     dog_profile_id = Column(String(36), nullable=False)
     source = Column(String(50), nullable=False)
     source_id = Column(String(255), nullable=False)
     # When this snapshot was taken — equals the main row's last_updated_at at
     # the moment of archiving, so you can reconstruct "what was true at time T".
-    archived_at = Column(DateTime, nullable=False)
+    archived_at = Column(DateTime(timezone=True), nullable=False)
     # Live fields — same types as dog_profiles
     status = Column(String(20), nullable=False)
-    photos = Column(JSON, nullable=False)
-    media_records = Column(JSON, nullable=False)
+    photos = Column(JSONB, nullable=False)
+    media_records = Column(JSONB, nullable=False)
     description = Column(Text, nullable=True)
     extended_description = Column(Text, nullable=True)
-    tags = Column(JSON, nullable=False)
-    personality_traits = Column(JSON, nullable=False)
+    tags = Column(JSONB, nullable=False)
+    personality_traits = Column(JSONB, nullable=False)
     good_with_dogs = Column(Boolean, nullable=True)
     good_with_cats = Column(Boolean, nullable=True)
     good_with_kids = Column(Boolean, nullable=True)
@@ -392,4 +421,4 @@ class DogProfileHistory(Base):
     city = Column(String(100), nullable=True)
     state = Column(String(10), nullable=True)
     zip = Column(String(20), nullable=True)
-    listed_at = Column(DateTime, nullable=True)
+    listed_at = Column(DateTime(timezone=True), nullable=True)

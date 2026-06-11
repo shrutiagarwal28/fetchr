@@ -19,7 +19,6 @@ import time
 from playwright.sync_api import sync_playwright, Page
 
 from config import USER_AGENT
-from db.connection import create_tables
 
 logger = logging.getLogger(__name__)
 
@@ -34,9 +33,7 @@ class BaseScraper:
         self.location = location
 
     def run(self) -> None:
-        """Entry point: set up DB, launch browser, delegate to _scrape()."""
-        create_tables()
-
+        """Entry point: launch browser, delegate to _scrape()."""
         with sync_playwright() as pw:
             browser = pw.chromium.launch(
                 headless=self.headless,
@@ -55,8 +52,8 @@ class BaseScraper:
             # playwright-stealth patches navigator properties that headless
             # Chrome exposes (webdriver flag, plugins list, etc.)
             try:
-                from playwright_stealth import stealth_sync
-                stealth_sync(page)
+                from playwright_stealth import Stealth
+                Stealth().apply_stealth_sync(page)
                 logger.debug("Stealth applied to page")
             except ImportError:
                 logger.warning(

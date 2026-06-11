@@ -18,14 +18,21 @@ from __future__ import annotations
 import json
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 from urllib.parse import urljoin
 
 from playwright.sync_api import Page, TimeoutError as PWTimeoutError
 from sqlalchemy.orm import Session as SessionType
 
-from db.connection import Session, save_raw_scrape, upsert_dog
+from db.connection import (
+    Session,
+    dequeue_detail_visit,
+    fetch_queued_urls,
+    save_raw_scrape,
+    stamp_detail_scraped_at,
+    upsert_dog,
+)
 from models.dog import DogProfile
 from scrapers.base import BaseScraper
 
@@ -41,11 +48,17 @@ CARD_SELECTORS = [
     "a[href*='/dog/']",
 ]
 
-# Map PetFinder's adoption status labels → our enum
+# Map PetFinder's adoption status labels → our internal labels.
+# All 6 canonical PetFinder statuses are listed explicitly (confirmed via
+# AllAnimalAttributes GraphQL response — this is a dropdown field, not free text,
+# so these 6 values are exhaustive).
 STATUS_MAP = {
     "adoptable": "available",
     "pending": "pending",
     "adopted": "adopted",
+    "hold": "hold",
+    "found": "found",
+    "other": "other",
 }
 
 
@@ -73,14 +86,13 @@ def _build_start_url(location: str) -> str:
 
 def _parse_iso_dt(raw: Optional[str]) -> Optional[datetime]:
     """
-    Parse an ISO 8601 timestamp string from PetFinder into a naive UTC datetime.
+    Parse an ISO 8601 timestamp string from PetFinder into a timezone-aware UTC datetime.
     Handles both 'Z' and '+00:00' suffixes. Returns None if raw is absent or unparseable.
-    Stored as naive UTC to stay consistent with first_seen_at / last_updated_at.
     """
     if not raw:
         return None
     try:
-        return datetime.fromisoformat(raw.replace("Z", "+00:00")).replace(tzinfo=None)
+        return datetime.fromisoformat(raw.replace("Z", "+00:00")).astimezone(timezone.utc)
     except ValueError:
         logger.warning("Could not parse datetime: %s", raw)
         return None
@@ -118,6 +130,8 @@ def _normalize_age(raw: str) -> tuple[str, Optional[float]]:
         return "puppy", None
     if "young" in raw:
         return "young", None
+    if "adult" in raw:
+        return "adult", None
     if "senior" in raw:
         return "senior", None
 
@@ -188,43 +202,107 @@ class PetFinderScraper(BaseScraper):
 
     def _scrape(self, page: Page) -> None:
         counts = {"fetched": 0, "created": 0, "updated": 0, "unchanged": 0, "skipped": 0, "errors": 0}
+        # Track all URLs visited this run so the listing-page fallback never
+        # re-visits a dog already processed from the queue.
+        visited_this_run: set[str] = set()
 
         start_url = _build_start_url(self.location)
-        logger.info("Loading listing page: %s", start_url)
-        page.goto(start_url, wait_until="domcontentloaded", timeout=60_000)
-
-        card_urls = self._collect_card_urls(page, start_url)
-        card_urls = card_urls[: self.max_results]
-        total = len(card_urls)
-        logger.info("Found %d dog cards to scrape", total)
 
         with Session() as session:
-            for idx, detail_url in enumerate(card_urls, start=1):
+
+            # ------------------------------------------------------------------
+            # Phase 1 — drain the urls_to_visit queue (populated by explore scraper)
+            # ------------------------------------------------------------------
+            queued = fetch_queued_urls(session, self.SOURCE_NAME, limit=self.max_results)
+            if queued:
+                logger.info("Queue has %d dogs to visit — processing before listing-page scan", len(queued))
+                # Navigate to the listing page once to establish a browser session
+                # before visiting individual detail pages.
+                page.goto(start_url, wait_until="domcontentloaded", timeout=60_000)
+
+            for source_id, detail_url in queued:
+                if counts["fetched"] >= self.max_results:
+                    break
                 try:
                     profile = self._scrape_detail_page(page, detail_url, session)
                     if profile is None:
                         counts["errors"] += 1
+                        # Leave in queue — failed visits retry on next run.
                         continue
 
                     action = upsert_dog(session, profile)
+                    stamp_detail_scraped_at(session, self.SOURCE_NAME, source_id)
+                    dequeue_detail_visit(session, self.SOURCE_NAME, source_id)
+                    session.commit()
+
                     counts[action] += 1
                     counts["fetched"] += 1
+                    visited_this_run.add(detail_url)
 
                     logger.info(
-                        "Scraped dog %d/%d: %s (%s, %s) [%s]",
-                        idx,
-                        total,
+                        "Queue dog %d: %s (%s, %s) [%s]",
+                        counts["fetched"],
                         profile.name,
                         profile.breed_primary,
                         profile.city or "unknown city",
                         action,
                     )
                 except Exception:
-                    logger.exception("Unhandled error on %s", detail_url)
+                    logger.exception("Unhandled error on queued URL %s", detail_url)
                     counts["errors"] += 1
 
-                if idx < total:
-                    self._random_delay()
+                self._random_delay()
+
+            # ------------------------------------------------------------------
+            # Phase 2 — listing-page fallback for any remaining slots
+            # ------------------------------------------------------------------
+            remaining = self.max_results - counts["fetched"]
+            if remaining <= 0:
+                logger.info("Queue filled max_results=%d — skipping listing-page scan", self.max_results)
+            else:
+                logger.info(
+                    "Loading listing page for remaining %d slots: %s",
+                    remaining, start_url,
+                )
+                page.goto(start_url, wait_until="domcontentloaded", timeout=60_000)
+                card_urls = self._collect_card_urls(page, start_url)
+                # Skip anything already visited from the queue this run
+                card_urls = [u for u in card_urls if u not in visited_this_run][:remaining]
+                total_listing = len(card_urls)
+                logger.info("Found %d new dog cards from listing page", total_listing)
+
+                for idx, detail_url in enumerate(card_urls, start=1):
+                    try:
+                        profile = self._scrape_detail_page(page, detail_url, session)
+                        if profile is None:
+                            counts["errors"] += 1
+                            continue
+
+                        action = upsert_dog(session, profile)
+                        stamp_detail_scraped_at(session, self.SOURCE_NAME, profile.source_id)
+                        # No-op if the dog wasn't queued; cleans up if it was.
+                        dequeue_detail_visit(session, self.SOURCE_NAME, profile.source_id)
+                        session.commit()
+
+                        counts[action] += 1
+                        counts["fetched"] += 1
+                        visited_this_run.add(detail_url)
+
+                        logger.info(
+                            "Listing dog %d/%d: %s (%s, %s) [%s]",
+                            idx,
+                            total_listing,
+                            profile.name,
+                            profile.breed_primary,
+                            profile.city or "unknown city",
+                            action,
+                        )
+                    except Exception:
+                        logger.exception("Unhandled error on %s", detail_url)
+                        counts["errors"] += 1
+
+                    if idx < total_listing:
+                        self._random_delay()
 
         logger.info(
             "Done. fetched=%d created=%d updated=%d unchanged=%d skipped=%d errors=%d",
@@ -458,6 +536,7 @@ class PetFinderScraper(BaseScraper):
         org_social_urls: list[str] = org.get("socialUrl") or []
         org_mission_statement = org.get("missionStatement") or None
         org_onsite_vet = org.get("onsiteVet")
+        org_medical_care_provided = org.get("medicalCareProvided")
         org_supports_rehome = org.get("supportsRehome")
         org_spay_neuter_policy = org.get("spayNeuterPolicy") or None
         org_special_services: list[str] = org.get("specialServices") or []
@@ -520,7 +599,10 @@ class PetFinderScraper(BaseScraper):
         # --- Adoption / status (animal.residency) ---
         residency: dict = animal.get("residency") or {}
         raw_status = (residency.get("adoptionStatus") or "").lower()
-        status = STATUS_MAP.get(raw_status, "available")
+        status = STATUS_MAP.get(raw_status)
+        if status is None:
+            logger.warning("Unrecognized adoptionStatus %r at %s — PetFinder may have added a new status. Storing raw value.", raw_status, url)
+            status = raw_status or "unknown"
         adoption_fee = residency.get("adoptionFee")
         adoption_fee_waived = residency.get("adoptionFeeWaived")
         display_adoption_fee = residency.get("displayAdoptionFee")
@@ -603,6 +685,7 @@ class PetFinderScraper(BaseScraper):
             org_social_urls=org_social_urls,
             org_mission_statement=org_mission_statement,
             org_onsite_vet=org_onsite_vet,
+            org_medical_care_provided=org_medical_care_provided,
             org_supports_rehome=org_supports_rehome,
             org_spay_neuter_policy=org_spay_neuter_policy,
             org_special_services=org_special_services,

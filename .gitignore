@@ -6,6 +6,18 @@ __pycache__/
 venv/
 .DS_Store
 .idea/
-debug_detail.png
+debug_*.png
 debug_page.html
 fetchr.json
+
+# Local dev tooling config
+.mcp.json
+
+# Credentials captured from page source — never commit
+exposed-creds.json
+
+# Captured network / scrape artifacts (debug output, regenerated on each run)
+graphql_intercepted_requests.json
+graphql_breed_list.json
+explore_listing_next_data.json
+explore_detail_page_props.json
