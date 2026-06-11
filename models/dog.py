@@ -24,6 +24,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     Index,
+    Integer,
     String,
     Text,
     UniqueConstraint,
@@ -214,6 +215,9 @@ class DogORM(Base):
     breed_primary = Column(String(255), nullable=False)
     breed_secondary = Column(String(255), nullable=True)
     is_mixed = Column(Boolean, default=False, nullable=False)
+    # FK to petfinder_breeds.id — resolved from breed_primary on insert.
+    # Declared without ForeignKey() here; constraint lives in the migration.
+    breed_canonical_id = Column(Integer, nullable=True)
     age_category = Column(String(20), nullable=False)
     age_years_approx = Column(Float, nullable=True)
     age_label = Column(String(50), nullable=True)

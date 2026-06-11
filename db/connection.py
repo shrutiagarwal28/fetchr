@@ -144,6 +144,33 @@ def upsert_dog(session: SessionType, profile: DogProfile) -> str:
         return "updated"
 
     row = DogORM(**profile.model_dump())
+    from models.reference import PetFinderBreedORM
+    from sqlalchemy import func as sa_func
+    breed_row = session.query(PetFinderBreedORM).filter_by(name=profile.breed_primary).first()
+    if breed_row:
+        row.breed_canonical_id = breed_row.id
+    else:
+        # Unknown breed — not yet in petfinder_breeds (PetFinder adds breeds occasionally).
+        # Auto-insert with a synthetic negative ID so breed_canonical_id is never NULL
+        # and FK-based matching queries never silently drop this dog.
+        # Negative IDs are unambiguously synthetic; PetFinder's own IDs are always positive.
+        # When you re-seed and PetFinder officially adds the breed, update the ID + FK.
+        logger.warning(
+            "Unrecognized breed %r for source_id=%s — auto-inserting into petfinder_breeds "
+            "with synthetic negative ID. Re-run scripts/seed_breeds.py to reconcile.",
+            profile.breed_primary, profile.source_id,
+        )
+        min_id = session.query(sa_func.min(PetFinderBreedORM.id)).scalar() or 0
+        synthetic_id = min(min_id, 0) - 1
+        slug = profile.breed_primary.lower().replace(" ", "_").replace("/", "_").replace("-", "_")
+        session.add(PetFinderBreedORM(
+            id=synthetic_id,
+            alternate_id=f"auto_{slug}",
+            name=profile.breed_primary,
+            seeded_at=datetime.now(timezone.utc),
+        ))
+        session.flush()
+        row.breed_canonical_id = synthetic_id
     session.add(row)
     try:
         session.commit()

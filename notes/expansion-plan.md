@@ -94,6 +94,12 @@ At commercial scale, scrapers break silently. Needed from day one:
 
 ---
 
+## Operational To-Dos
+
+- [ ] **Re-run `scripts/seed_breeds.py` periodically** — PetFinder adds breeds occasionally (ID gaps in the current data show this has happened multiple times). When a dog with an unrecognized breed is scraped, `upsert_dog` auto-inserts it into `petfinder_breeds` with a synthetic negative ID so FK integrity is preserved. Re-seeding replaces synthetic rows with PetFinder's official IDs. Check for synthetic rows with: `SELECT * FROM petfinder_breeds WHERE id < 0;`
+
+---
+
 ## Schema Normalization To-Dos
 
 - [ ] **Extract `organizations` table** — `dog_profiles` currently has 20+ org fields (`shelter_name`, `org_type`, `org_website`, `org_mission_statement`, `org_onsite_vet`, `org_foster_count`, `org_employee_count`, etc.) that are functionally dependent on `org_id`, not on the dog. Two dogs from the same shelter duplicate all 20 values. Proper fix: create an `organizations` table with `org_id` as PK, move all org fields there, replace them in `dog_profiles` with a single `org_id` FK. `org_animal_id` (the shelter's internal kennel number for a specific dog) stays on `dog_profiles`. Do this as a single dedicated migration — do not split org fields across two tables as a stopgap.

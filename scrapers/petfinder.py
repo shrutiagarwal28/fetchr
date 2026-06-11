@@ -86,14 +86,13 @@ def _build_start_url(location: str) -> str:
 
 def _parse_iso_dt(raw: Optional[str]) -> Optional[datetime]:
     """
-    Parse an ISO 8601 timestamp string from PetFinder into a naive UTC datetime.
+    Parse an ISO 8601 timestamp string from PetFinder into a timezone-aware UTC datetime.
     Handles both 'Z' and '+00:00' suffixes. Returns None if raw is absent or unparseable.
-    Stored as naive UTC to stay consistent with first_seen_at / last_updated_at.
     """
     if not raw:
         return None
     try:
-        return datetime.fromisoformat(raw.replace("Z", "+00:00")).replace(tzinfo=None)
+        return datetime.fromisoformat(raw.replace("Z", "+00:00"))
     except ValueError:
         logger.warning("Could not parse datetime: %s", raw)
         return None
