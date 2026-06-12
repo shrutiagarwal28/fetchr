@@ -9,6 +9,7 @@ Columns are added phase by phase via Alembic migrations:
   Phase 1: size_enc, age_category_enc, coat_type_enc
   Phase 2: good_with_*_enc, house_trained_enc, vaccinated_enc, spayed_neutered_enc
   Phase 3: age_years_imputed, age_was_imputed
+  Phase 4: breed_group
 """
 
 from __future__ import annotations
@@ -52,6 +53,11 @@ class DogFeaturesORM(Base):
     # Phase 3 — imputed age (zero nulls for ML models that require complete features)
     age_years_imputed = Column(Float, nullable=True)
     age_was_imputed = Column(Boolean, nullable=True)
+
+    # Phase 4 — nominal breed group (VARCHAR; one-hot encoding deferred to model training)
+    # AUDIT-ONLY: monitoring / disparate-impact audits only. Must never feed an adopter
+    # exclusion filter or matcher ranking. See features.breed.AUDIT_ONLY_FEATURES.
+    breed_group = Column(String(50), nullable=True)
 
     # When this row was last computed — useful for staleness checks after re-scrapes.
     computed_at = Column(DateTime(timezone=True), nullable=False,
