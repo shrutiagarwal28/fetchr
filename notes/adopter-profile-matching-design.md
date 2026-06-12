@@ -322,6 +322,119 @@ Once both repos are in production, fetchr's changes to `dog_features` and `dog_p
 
 ---
 
+## Pre-Coding Workflow for the Matching App Repository
+
+Before writing a single line of code in the new repo, complete these steps in order. Don't skip to repo setup — the design work is what makes the coding fast.
+
+### Step 1 — Answer the Product Questions First
+
+These are decisions only you can make. Every technical decision downstream depends on them.
+
+**Define the MVP explicitly.**
+The minimum thing that has to exist for the app to be useful to one real adopter. Proposed MVP: an adopter can create a profile, see a ranked feed of dogs near them filtered by their household, and swipe. No pop-up questions, no collaborative filtering, no embeddings — just Stage 1 matching (hard filters + popularity ranking). Write this down before designing anything.
+
+**Decide the surface.**
+Web app, mobile app, or API-only for now? This determines framework choice and how you think about authentication. Wrong choice here is expensive to undo.
+
+**Decide who runs the database.**
+Is the matching app reading directly from fetchr's Postgres, or will there eventually be two separate databases? For now, sharing one Postgres instance is the right call — it avoids a sync layer that isn't needed yet. But decide this explicitly; it affects config and migration setup.
+
+---
+
+### Step 2 — Nail the Data Contract with fetchr
+
+Before designing the matching app's schema, write down exactly what it will consume from fetchr. This produces two things:
+
+**A query spec** — the actual SQL the matching app will run against fetchr's tables. Write it out before coding. This forces you to discover missing indexes or columns in fetchr before you're blocked mid-build.
+
+**A column dependency list** — the specific `dog_features` and `dog_profiles` columns the matching app depends on. Anything not on this list, fetchr can change freely. This is the schema stability contract.
+
+This step often reveals that fetchr needs one or two additions before the matching app can start.
+
+→ See `matching-app-schema.md` for the schema design.
+
+---
+
+### Step 3 — Design the Adopter-Side Schema
+
+Sketch the full ERD before writing a single migration. Tables needed:
+
+```
+adopter_profiles
+adopter_interactions      (append-only event log)
+adopter_preferences       (derived; recomputable)
+question_trigger_config   (static config)
+adopter_question_events   (per-adopter pop-up history)
+```
+
+For each table, decide: columns, types, nullability, indexes, foreign keys. Key questions:
+- Primary key strategy: UUID vs serial? (UUID is safer for a consumer app — no enumerable IDs)
+- Does `adopter_interactions.dog_profile_id` need a hard FK to fetchr's `dog_profiles`, or is it a soft reference since the repos are conceptually separate?
+- What indexes does `adopter_interactions` need? The inference job will read it constantly.
+
+Don't write migrations yet — design the schema as a document first.
+
+→ See `matching-app-schema.md`.
+
+---
+
+### Step 4 — Design the API Contract
+
+List the endpoints the product needs and sketch their request/response shapes. Don't implement — just name and describe.
+
+MVP endpoints:
+```
+POST /adopters                      — create profile (onboarding)
+GET  /adopters/{id}/feed            — ranked dog feed
+POST /adopters/{id}/interactions    — record a swipe, save, or view
+GET  /adopters/{id}/watchlist       — saved dogs
+GET  /adopters/{id}/preferences     — read learned preferences
+```
+
+This step reveals design gaps early — e.g., what does the feed response look like? Does it return full dog profiles or just IDs? Does it include a match score? Answering those before coding saves significant refactoring.
+
+→ See `matching-app-api.md`.
+
+---
+
+### Step 5 — Write the Matching Logic in Pseudocode
+
+Before writing any SQL or Python, write out the matching function in plain pseudocode detailed enough that a second engineer could implement it without asking questions.
+
+Decide explicitly:
+- What is the exact SQL for the hard filter stage?
+- For cold start, how is popularity scored? `save_to_watchlist` count? Right-swipe count across all adopters? A combination?
+- What is the fallback if a dog has zero interactions from any adopter?
+- What are you explicitly NOT building in the MVP? Write this down — scope creep at coding time is the main reason projects stall.
+
+→ Matching logic pseudocode lives in the Matching Function section above and in `matching-app-schema.md`.
+
+---
+
+### Step 6 — Choose the Tech Stack
+
+Only after the product and design decisions are made, pick tools. Those decisions constrain the choices sensibly.
+
+Things to decide:
+- **Language / framework** — Python + FastAPI is natural given fetchr is Python, but make it a conscious decision
+- **Auth** — how do adopters log in? Email/password, Google OAuth? Do not design custom auth; use a library or managed service (e.g. Supabase Auth, Clerk)
+- **Hosting** — local only for now, or deploy from the start?
+- **Migration tooling** — Alembic again (consistent with fetchr) is the default choice
+
+---
+
+### Step 7 — Set Up the Repo
+
+Only now create the repository. With the above done, you know:
+- What the folder structure should look like
+- What goes in `requirements.txt`
+- What environment variables are needed (including fetchr's DB URL)
+- What the first migration will create
+
+Repo setup takes an afternoon. The design work above is what takes real time — and what makes the coding fast once it starts.
+
+---
+
 ## Open Questions (Not Yet Resolved)
 
 - **How long does cold start last?** What's the threshold (N interactions) at which we switch from popularity-based to preference-based ranking? Needs experimentation.
@@ -329,3 +442,5 @@ Once both repos are in production, fetchr's changes to `dog_features` and `dog_p
 - **Adopter-side feedback on matches.** If the adopter is shown a dog and immediately left-swipes, does that feed back into improving the dog's features or just the adopter's preference model?
 - **Multi-household decision making.** Real adopter decisions often involve two people (partners). The profile models one person. Is this a problem at this stage?
 - **Re-engagement.** If an adopter goes dark for 3 months and comes back, do we reset or preserve their preference model? Preferences can drift.
+- **MVP surface decision.** Web app, mobile app, or API-only? Not yet decided.
+- **Database sharing decision.** Shared Postgres with fetchr vs. separate DB? Not yet decided — leaning toward shared for now.

@@ -6,10 +6,11 @@ Fetchr is the data ingestion layer of a larger dog-to-adopter matching platform.
 
 ```
 [Scrapers]  →  [Ingestion Pipeline]  →  [Storage]  →  [ML / Matching]  →  [Product]
-  fetchr            fetchr              Postgres        matching platform
+  fetchr            fetchr              Postgres        matching app          matching app
+                                        (shared)        (separate repo)       (separate repo)
 ```
 
-Fetchr owns the first two boxes. Everything downstream depends on the quality and freshness of what fetchr produces.
+**Repository boundary (decided June 2026):** Fetchr owns everything up to and including `dog_features`. The matching app is a separate repository that reads from `dog_features JOIN dog_profiles` and owns all adopter-side logic. See `notes/adopter-profile-matching-design.md` for the full boundary definition and the design docs for the matching app (`notes/matching-app-schema.md`, `notes/matching-app-api.md`).
 
 ---
 
@@ -86,16 +87,29 @@ At commercial scale, scrapers break silently. Needed from day one:
 
 ## Build Priority
 
+**fetchr milestones:**
+
 1. ~~**Add raw JSON storage**~~ ✓ Done — `raw_scrapes` table exists in `db/connection.py`
 2. ~~**Switch to Postgres**~~ ✓ Done — Alembic-managed schema, JSONB columns, TIMESTAMPTZ, soft deletes, FK constraint
 3. ~~**Two-scraper architecture + verification**~~ ✓ Done — explore scraper (GraphQL), detail scraper (queue-based), `urls_to_visit`, `breed_supply_snapshots`, STATUS_MAP fix; 51 dogs in DB
-4. **Feature engineering** ← next — `dog_features` table; ordinal encodings, three-state booleans, continuous age, breed groups, personality trait multi-hot, temporal features; wire recompute into scrape pipeline
-5. **History-derived features** — `went_pending_count`, `returned_from_pending`, `days_to_adoption`, `is_known_history`; requires scrape history to accumulate before meaningful values
-6. **Schema normalization** — extract `organizations` table; move all 20+ org fields out of `dog_profiles`; replace with `org_id` FK
-7. **Observability** — scrape job metrics (created/updated/skipped per run per source); data freshness alerts; schema drift detection
-8. **Adopter profile + matching algorithm** — design adopter schema; hard filter engine (SQL WHERE on Tier 1 fields); semantic re-ranking (`pgvector` embeddings on `description` + `personality_traits`)
+4. ~~**Feature engineering — Phase 0**~~ ✓ Done — `age_years_approx` derived from `birth_date` / `age_range_label`; pure functions in `features/age.py`; backfill script in `scripts/backfill_age_years_approx.py`
+5. **Feature engineering — Phases 1–6** ← current — `dog_features` table; ordinal encodings (size, age, coat), three-state booleans (compat_*, house_trained, vaccinated, spayed), `age_years_imputed`, breed group mapping, personality trait multi-hot, temporal features; wire recompute into scrape pipeline. See `notes/feature-engineering-plan.md` for full spec.
+6. **History-derived features** — `went_pending_count`, `returned_from_pending`, `days_to_adoption`, `is_known_history`; requires scrape history to accumulate before meaningful values; do not start until `dog_features` is stable
+7. **Schema normalization** — extract `organizations` table; move all 20+ org fields out of `dog_profiles`; replace with `org_id` FK
+8. **Observability** — scrape job metrics (created/updated/skipped per run per source); data freshness alerts; schema drift detection
 9. **AdoptaPet scraper** — implement `scrapers/adoptapet.py`; prove `DogProfile` canonical schema absorbs a second source cleanly
 10. **Celery + Redis job queue** — replace sequential scraping with async worker pool; only after multi-source pattern is solid
+
+**Matching app milestones (separate repository — start after item 5 above is complete):**
+
+A. **Pre-coding design** ← in progress — adopter schema, API contract, matching logic pseudocode designed; see `notes/adopter-profile-matching-design.md`, `notes/matching-app-schema.md`, `notes/matching-app-api.md`
+B. **MVP repo setup** — Python + FastAPI; shared Postgres with fetchr; Alembic for adopter-side migrations; auth strategy decided
+C. **Adopter onboarding + event log** — `adopter_profiles`, `adopter_interactions` tables; `POST /adopters`, `POST /adopters/{id}/interactions` endpoints
+D. **Stage 1 matching (cold start)** — hard filter SQL + popularity ranking; `GET /adopters/{id}/feed`; diversity injection for first 10–15 cards
+E. **Preference inference (warm start)** — inference job reads `adopter_interactions`, writes `adopter_preferences`; feed switches from popularity to preference scoring after N interactions
+F. **Pop-up question system** — `question_trigger_config`, `adopter_question_events`; trigger engine fires confirmatory questions based on behavioral patterns
+G. **Semantic re-ranking** — dog description embeddings (computed by matching app, not fetchr); `pgvector` cosine similarity rerank on top-N; requires `pgvector` extension on shared Postgres
+H. **Collaborative filtering** — only after enough adopter interaction volume to make it meaningful
 
 ---
 
