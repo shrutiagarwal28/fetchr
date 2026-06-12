@@ -21,35 +21,35 @@ WHERE clause before any ML ranking.
 | Field | Why |
 |---|---|
 | `status` | Only show `"available"` dogs — never pending/adopted |
-| `good_with_kids` | Non-negotiable for families with children |
-| `good_with_dogs` | Non-negotiable for households with dogs |
-| `good_with_cats` | 73% null — treat as soft filter, not hard filter (see audit §9) |
-| `house_trained` | Non-negotiable for apartment adopters |
+| `good_with_kids` | Non-negotiable for families with children (69% populated) |
+| `good_with_dogs` | Non-negotiable for households with dogs (72% populated) |
+| `good_with_cats` | **73% null — treat as soft filter, not hard filter** (see audit §9) |
+| `house_trained` | Non-negotiable for apartment adopters (84% populated) |
 | `special_needs` | Some adopters specifically want / specifically cannot take special needs dogs |
-| `spayed_neutered` | Many adopters filter on this |
-| `size` | Common hard preference — people know if they want a small vs large dog |
+| `spayed_neutered` | Many adopters filter on this (93% populated) |
+| `size` | Common hard preference — people know if they want a small vs large dog (100%) |
 
 ### Tier 2: Soft filters (scored — influence ranking, not elimination)
 These contribute to a match score but a null value doesn't disqualify the dog.
 
-| Field | Why |
-|---|---|
-| `age_category` | Preferences exist but many adopters are flexible; 38% mismatch rate vs DOB — treat as approximate |
-| `age_years_approx` | Not yet derived — will be calculated from `birth_date` (29% coverage) or `age_range_label` midpoint |
-| `breed_primary` | Some adopters have breed preferences |
-| `gender` | Some adopters have preferences, others don't care |
-| `coat_length` | Allergy-sensitive adopters care about this; 28% null |
-| `color` | Low-weight soft filter; 94% populated, 11 distinct values |
-| `vaccinated` | Health signal; 97% populated |
-| `weight_min` / `weight_max` | SQL range filter only (`WHERE weight_max <= ?`) — not in ML feature vector alongside `size` (same size tier, different representation) |
+| Field | Coverage | Why |
+|---|---|---|
+| `age_category` | 100% | 38% mismatch rate vs actual DOB — treat as approximate; prefer `age_years_approx` |
+| `age_years_approx` | **0% — not yet derived** | Must be computed from `birth_date` (29 dogs) or `age_range_label` midpoint (71 dogs) |
+| `breed_primary` | 100% | Some adopters have breed preferences; top-heavy (Mixed 30%, Pit Bull 28%) |
+| `gender` | 100% | Some adopters have preferences, others don't care; 54% F / 46% M |
+| `coat_length` | 72% | Allergy-sensitive adopters care about this; 28% null |
+| `color` | 94% | Low-weight soft filter; 11 distinct values |
+| `vaccinated` | 97% | Health signal |
+| `weight_min` / `weight_max` | 100% | SQL range filter only (`WHERE weight_max <= ?`) — **not** as ML features alongside `size` (fixed PetFinder bands per size tier, not actual weights) |
 
 ### Tier 3: Semantic signal (ML/NLP — fuzzy matching)
 These fields are the richest signal but require embedding/NLP to use.
 
-| Field | Why |
-|---|---|
-| `description` | 100% coverage, median 980 chars — best signal for fuzzy matching ("I want a calm apartment dog") |
-| `personality_traits` | Free-text tags from shelter — "Crate Trained", "Calm Companion", "Good with Cats" |
+| Field | Coverage | Why |
+|---|---|---|
+| `description` | 100% | Median 980 chars — best signal for fuzzy matching ("I want a calm apartment dog") |
+| `personality_traits` | 85% | 51 unique traits; top: Affectionate (57%), Friendly (56%), Playful (47%), Curious (43%) |
 
 ### Tier 4: Logistics (shown in results, not used for matching)
 Not used for ranking but displayed to the adopter in search results.
@@ -64,7 +64,7 @@ Not used for ranking but displayed to the adopter in search results.
 | `petfinder_url` | Link back to source |
 
 ### Fields confirmed unpopulated — removed from matching plan
-PetFinder never sends these. Stored in schema for future use but must not be used as filters:
+PetFinder never sends these. Stored in schema for future use but must not be used as filters or features:
 
 | Field | Coverage | Was planned as |
 |---|---|---|
@@ -72,6 +72,7 @@ PetFinder never sends these. Stored in schema for future use but must not be use
 | `requires_fenced_yard` | 0% | Tier 1 hard filter |
 | `knows_basic_commands` | 0% | Tier 2 soft filter |
 | `good_with_other_animals` | 7% | Soft filter |
+| `tags` | 0% | Multi-hot encode (PetFinder always sends `[]`) |
 
 ### Fields NOT needed for matching
 Everything else — org operational stats (`org_annual_adoptions`, `org_employee_count`),
@@ -91,17 +92,56 @@ Stored for completeness, not queried.
 notebook and reflected in the field tiers above. See audit §9 Summary for the complete
 matching signal table.
 
-### Step 3: Migrate to Postgres ← current sprint
-SQLite cannot support what comes next:
-- Concurrent writes when the scraper runs in parallel
-- `pgvector` extension for semantic embedding similarity search
-- PostGIS for geospatial proximity queries (within 50 miles of zip code)
-- Proper JSONB indexing for personality_traits and media_records
+### ~~Step 3: Migrate to Postgres~~ ✓ Done
+Schema live in Postgres. SQLAlchemy + Alembic managing migrations. Both PetFinder and
+AdoptAPet scrapers verified against the Postgres DB. Scraper queue wired and working.
 
-This is the gating dependency for Steps 4 and 5. The expansion plan already documents
-this migration. No ML work should start before Postgres is in place.
+### Step 4: Feature Engineering ← current sprint
+Build a `dog_features` table (Feature Store pattern — separate from `dog_profiles` so
+features can be recomputed without touching the ingestion pipeline).
 
-### Step 4: Design the adopter profile
+Full plan in `notes/feature-engineering-plan.md`. Phases in order:
+
+**Phase 0 — Derive `age_years_approx` (prerequisite for everything else)**
+`age_years_approx` is currently 100% null. Must be populated before any encoding work.
+- 29 dogs have `birth_date` → exact age: `(today - birth_date).days / 365.25`
+- 71 dogs have `age_range_label` → parse midpoint from the range string:
+
+| age_range_label | midpoint |
+|---|---|
+| less than 1 year | 0.5 |
+| 1–3 years | 2.0 |
+| 3–8 years | 5.5 |
+| 8+ years | 10.0 |
+
+Write result back to `dog_profiles.age_years_approx` (column exists, just null).
+
+**Phase 1 — Ordinal encoding** (`size`, `age_category`, `coat_length` → integers).
+Ordinal (not one-hot) because these have a natural order that carries meaning.
+
+**Phase 2 — Three-state boolean normalization** (`good_with_*`, `house_trained`,
+`vaccinated`, `spayed_neutered` → `1 = yes, 0 = no, -1 = unknown`).
+Null ≠ false. A shelter that didn't fill in `good_with_dogs` is not saying the dog is bad
+with dogs — it's an absence of information. Treating null as false penalizes dogs with
+incomplete records.
+
+**Phase 3 — Continuous age** (`age_years_imputed` float, no nulls + `age_was_imputed`
+boolean flag). Combines Phase 0 derivation with a fallback to `age_category` midpoint as
+last resort.
+
+**Phase 4 — Breed group mapping** (`breed_primary` → ~9 AKC-style groups via lookup dict).
+Dataset is 58% pit bulls / mixed breeds — grouping must handle these well. Unmatched
+breeds fall to `"Unknown"`, never raise an error.
+
+**Phase 5 — Personality traits multi-hot** (top 15–20 traits by frequency → individual
+`trait_<name>` BOOLEAN columns). Vocabulary confirmed from audit: 51 unique traits, 85%
+of dogs have at least one. Traits that overlap with boolean fields (`Housetrained`,
+`Good with Dogs`, etc.) are kept as supplementary confirmation only.
+
+**Phase 6 — Temporal features** (`days_listed`, `log_days_listed`). `listed_at` is 100%
+null from PetFinder — fall back entirely to `first_seen_at`.
+
+### Step 5: Design the adopter profile
 This is the missing half of the matching equation. The dog side is built. The adopter
 side doesn't exist yet. You need to define:
 
@@ -109,11 +149,10 @@ side doesn't exist yet. You need to define:
 - What lifestyle data do you collect? (apartment vs house, kids, other pets, activity level)
 - Is this structured input (form fields) or natural language ("I want a calm, small dog")?
 
-The answer determines whether you build a filter engine, a vector similarity search, or
-both.
+The answer determines whether you build a filter engine, a vector similarity search, or both.
 
-### Step 5: Implement the matching algorithm
-Only after Steps 1–4:
+### Step 6: Implement the matching algorithm
+Only after Steps 1–5:
 
 1. **Phase 1 — Hard filter engine**: SQL WHERE clause on Tier 1 fields. Returns candidate
    set. Fast, transparent, explainable. Many platforms stop here.
