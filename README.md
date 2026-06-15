@@ -95,12 +95,25 @@ fetchr/
 │   ├── base.py                 ← shared browser lifecycle (Playwright)
 │   ├── petfinder.py            ← live scraper (explore + detail, queue-based)
 │   └── adoptapet.py            ← stub (not implemented yet)
-├── features/
-│   └── age.py                  ← age derivation: birth_date / age_range_label → float
+├── features/                   ← pure, DB-free feature transforms (Feature Store)
+│   ├── age.py                  ← age derivation: birth_date / age_range_label → float
+│   ├── categorical.py          ← ordinal encodings: size / age_category / coat_type
+│   ├── booleans.py             ← three-state encoder: True/False/None → 1/0/-1
+│   ├── imputation.py           ← age imputation via per-category medians
+│   └── breed.py                ← breed → breed_group (+ AUDIT-ONLY guardrail)
+├── models/
+│   ├── dog.py                  ← DogProfile (Pydantic) + DogORM (SQLAlchemy)
+│   ├── features.py             ← DogFeaturesORM — the dog_features table
+│   └── reference.py            ← petfinder_breeds + supply snapshot ORM models
+├── data/
+│   └── breed_groups.json       ← breed name → group mapping (Phase 4 lookup)
 ├── alembic/
 │   └── versions/               ← migration history
 ├── scripts/
-│   └── seed_breeds.py          ← seeds petfinder_breeds from AllAnimalAttributes
+│   ├── seed_breeds.py          ← seeds petfinder_breeds from AllAnimalAttributes
+│   ├── backfill_age_years_approx.py  ← Phase 0 backfill
+│   └── backfill_phase{1,2,3,4}.py    ← compute & upsert dog_features rows
+├── audit.ipynb                 ← data-quality / feature audit notebook
 ├── notes/                      ← design docs, expansion plan, feature engineering plan
 └── tests/
     └── test_build_start_url.py ← smoke test
@@ -145,13 +158,14 @@ python3 main.py scrape --source petfinder --max 100
 | Table | Purpose | Append-only? |
 |---|---|---|
 | `dog_profiles` | One canonical row per dog (dedup: `source` + `source_id`) | No — updated in place |
+| `dog_features` | ML-ready feature vector, 1:1 with `dog_profiles`. Derived & recomputable — the handoff point to the matching app | No — recomputed by backfill scripts |
 | `dog_profile_history` | Snapshot of live fields before each update | Yes |
 | `raw_scrapes` | Raw `__NEXT_DATA__` JSON before any normalization | Yes |
 | `urls_to_visit` | Scraper work queue — detail page URLs pending a visit | Consumed on read |
 | `breed_supply_snapshots` | Nationwide breed supply counts from PetFinder facets, timestamped | Yes |
 | `petfinder_breeds` | Canonical breed reference (309 breeds) seeded from PetFinder's vocabulary | Managed |
 
-`dog_features` is the next planned table — ML-ready feature vectors derived from `dog_profiles`, one row per dog. It is the handoff point between fetchr and the matching app.
+`dog_features` is populated by the `scripts/backfill_phase*.py` scripts, not by the scraper. The matching app reads `dog_features JOIN dog_profiles` — it never touches `raw_scrapes` or scraper internals.
 
 ### ER Diagram
 
@@ -217,6 +231,7 @@ erDiagram
         smallint spayed_neutered_enc
         float age_years_imputed
         boolean age_was_imputed
+        varchar breed_group
         timestamptz computed_at
     }
 
@@ -294,20 +309,37 @@ Feature engineering lives in the `features/` package. Features are derived artif
 - `parse_age_range_label(label)` — converts PetFinder's string ranges (`"(1-3 years)"`, `"(less than 1 year)"`) to a float midpoint
 - `derive_age_years_approx(birth_date, age_range_label)` — priority: exact DOB calculation → range midpoint → None
 
-Results are written to `dog_profiles.age_years_approx`. 29% of dogs have a birth date (exact); 71% use the range midpoint.
+Results are written to `dog_profiles.age_years_approx` (Phase 0 lives on `dog_profiles`; Phases 1+ live on `dog_features`). 29% of dogs have a birth date (exact); 71% use the range midpoint.
 
-### Phases 1–6 — Planned
+### Phase status
 
-| Phase | Output | Status |
+| Phase | Output (`dog_features` columns) | Status |
 |---|---|---|
-| 1 | Ordinal encodings: `size_ord`, `age_category_ord`, `coat_length_ord` | Planned |
-| 2 | Three-state booleans: `compat_kids`, `compat_dogs`, `compat_cats`, `house_trained_flag`, `vaccinated_flag`, `spayed_neutered_flag` (1 / 0 / -1) | Planned |
-| 3 | Continuous age: `age_years_imputed` (float, no nulls) + `age_was_imputed` flag | Planned |
-| 4 | Breed group: `breed_group` (~9 groups) + `is_purebred` boolean | Planned |
+| 0 | `age_years_approx` on `dog_profiles` (birth_date / range midpoint → float) | ✓ Done |
+| 1 | Ordinal encodings: `size_enc`, `age_category_enc`, `coat_type_enc` | ✓ Done |
+| 2 | Three-state booleans: `good_with_kids_enc`, `good_with_dogs_enc`, `good_with_cats_enc`, `house_trained_enc`, `vaccinated_enc`, `spayed_neutered_enc` (1 / 0 / -1) | ✓ Done |
+| 3 | Continuous age: `age_years_imputed` (float, no nulls) + `age_was_imputed` flag | ✓ Done |
+| 4 | Breed group: `breed_group` (9 groups) — **AUDIT-ONLY**, see decision #9 | ✓ Done |
 | 5 | Personality traits multi-hot: `trait_affectionate`, `trait_friendly`, etc. (top 15–20 by frequency) | Planned |
 | 6 | Temporal: `days_listed`, `log_days_listed` (falls back to `first_seen_at`) | Planned |
 
-See `notes/feature-engineering-plan.md` for full vocabulary, encoding decisions, and audit findings that drove each choice.
+The transforms in `features/` are **pure functions** — no DB access, fully unit-testable. The DB read/write is isolated in the `scripts/backfill_phase*.py` runners, which compute each phase's columns and `INSERT ... ON CONFLICT DO UPDATE` into `dog_features`. The scripts are **idempotent and re-runnable**:
+
+```bash
+source .venv/bin/activate
+python scripts/backfill_phase1.py   # size_enc, age_category_enc, coat_type_enc
+python scripts/backfill_phase2.py   # *_enc tristate compatibility/medical flags
+python scripts/backfill_phase3.py   # age_years_imputed + age_was_imputed
+python scripts/backfill_phase4.py   # breed_group
+```
+
+Notable encoding decisions:
+
+- **`coat_type_enc`** reframes PetFinder's `coat_length` (which mixes length and texture) as a *grooming-effort* ordinal: Short=1, Medium/Wire=2, Long/Curly=3.
+- **`age_category_enc`** maps `unknown` → `NULL` rather than forcing it onto the 1–4 scale — unknown age is not a life stage.
+- **Phase 3** imputes missing ages with the **median age per `age_category`** (global median as fallback), and flags every imputed row via `age_was_imputed` so models can down-weight them.
+
+See `notes/feature-engineering-plan.md` for full vocabulary, encoding decisions, and the audit findings (in `audit.ipynb`) that drove each choice.
 
 ## Key Architectural Decisions
 
@@ -335,6 +367,9 @@ Deliberate — this is a single-threaded CLI tool. Sequential page visits are in
 **8. Raw scrape failure is intentionally swallowed.**
 If `save_raw_scrape()` fails, it logs the error and continues — it never blocks the upsert path. The raw table is insurance against scraper bugs, not a hard dependency.
 
+**9. `breed_group` is AUDIT-ONLY.**
+`dog_features.breed_group` (and the `Pit Bull Type` value in particular) exists only for internal monitoring and disparate-impact audits — e.g. measuring whether pit-type dogs suffer longer time-to-adoption so we can *correct* for that bias. It must never feed an adopter-facing exclusion filter or the matcher's ranking. Breed-based exclusion is the discriminatory pattern that harms these dogs in the real world; replicating it behind an algorithm would launder that bias. Adopter constraints are expressed through *trait* filters (`good_with_cats`, energy level, novice-friendly) that describe the individual dog, not its breed label. `features/breed.py` exposes `AUDIT_ONLY_FEATURES` and `assert_not_audit_only()` as the machine-checkable enforcement point — any future filter/ranking code must call it on its feature inputs so a leak fails loudly.
+
 ## Environment Variables
 
 | Variable | Default | Purpose |
@@ -354,7 +389,8 @@ If `save_raw_scrape()` fails, it logs the error and continues — it never block
 | STATUS_MAP fix (hold / found / other statuses) | ✓ Done |
 | Breed canonical ID FK + `petfinder_breeds` reference table | ✓ Done |
 | Feature engineering Phase 0 — `age_years_approx` derivation | ✓ Done |
-| Feature engineering Phases 1–6 — `dog_features` table | In progress |
+| Feature engineering Phases 1–4 — `dog_features` (encodings, tristate, age imputation, breed group) | ✓ Done |
+| Feature engineering Phases 5–6 — personality multi-hot, temporal features | In progress |
 | History-derived features (`went_pending_count`, `days_to_adoption`) | Planned |
 | Schema normalization — extract `organizations` table | Planned |
 | Observability (scrape job metrics, freshness alerts, schema drift) | Planned |
