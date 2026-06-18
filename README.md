@@ -167,7 +167,7 @@ python3 main.py scrape --source petfinder --max 100
 
 `dog_features` is populated by the `scripts/backfill_phase*.py` scripts, not by the scraper. The matching app reads `dog_features JOIN dog_profiles` — it never touches `raw_scrapes` or scraper internals.
 
-### ER Diagram
+### ER Diagram for db at june 18th 2026
 
 ```mermaid
 erDiagram
