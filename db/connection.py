@@ -23,6 +23,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session as SessionType
 
 from config import DATABASE_URL, JSON_PATH
+from features.age import derive_age_years_approx
 from models.dog import Base, DogORM, DogProfile, DogProfileHistory, RawScrape
 from models.reference import BreedSupplySnapshotORM, UrlToVisitORM
 
@@ -144,6 +145,15 @@ def upsert_dog(session: SessionType, profile: DogProfile) -> str:
         return "updated"
 
     row = DogORM(**profile.model_dump())
+
+    # Derive numeric age at insert time so it's never null on new dogs.
+    # We modify the ORM row directly (not profile) to keep the Pydantic input
+    # unchanged — consistent with how breed_canonical_id is resolved below.
+    if row.age_years_approx is None:
+        row.age_years_approx = derive_age_years_approx(
+            profile.birth_date, profile.age_range_label
+        )
+
     from models.reference import PetFinderBreedORM
     breed_row = session.query(PetFinderBreedORM).filter_by(name=profile.breed_primary).first()
     if breed_row:

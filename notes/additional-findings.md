@@ -13,6 +13,7 @@ The listing page `__NEXT_DATA__` contains almost nothing useful — just CMS nav
 
 PetFinder exposes the following credentials in their public `__NEXT_DATA__` `runtimeConfig` (visible to any browser, no intrusion required). Saved separately in `exposed-creds.json`.
 
+\
 | Key | Value |
 |---|---|
 | `X_CLIENT_ID` | `0K3buVjVqhUvdoU6UVpbN0zejPhQcaUzt6mLcU6SSBfcxqCnj9` |
@@ -129,7 +130,6 @@ We store these as free-text strings scraped from the detail page, but `AllAnimal
 **Ages (4):** Baby, Young, Adult, Senior
 
 Knowing these upfront lets us validate scraped values and flag anything outside the controlled vocabulary (which would indicate a schema change on PetFinder's side).
-
 ---
 
 ## Finding 6 — `adopterProfile` schema (the other side of the match)
