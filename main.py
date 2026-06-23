@@ -15,7 +15,7 @@ import argparse
 import logging
 import sys
 
-from config import PETFINDER_LOCATION
+from config import PETFINDER_LOCATION, SCRAPE_ERROR_LOG_PATH
 
 # Configure logging before importing scrapers so all modules pick up the level
 logging.basicConfig(
@@ -23,6 +23,18 @@ logging.basicConfig(
     format="%(asctime)s  %(levelname)-8s  %(name)s  %(message)s",
     datefmt="%H:%M:%S",
 )
+
+# Persist WARNING+ records (data-quality issues like future-dated birth_date)
+# to a file so they survive the run for auditing. The console handler from
+# basicConfig still shows everything live; this handler is an append-only
+# durable copy of just the problems. Attached at the root logger so every
+# module's logger (features.*, scrapers.*, db.*) propagates into it.
+_error_file_handler = logging.FileHandler(SCRAPE_ERROR_LOG_PATH)
+_error_file_handler.setLevel(logging.WARNING)
+_error_file_handler.setFormatter(
+    logging.Formatter("%(asctime)s  %(levelname)-8s  %(name)s  %(message)s")
+)
+logging.getLogger().addHandler(_error_file_handler)
 
 logger = logging.getLogger("fetchr")
 

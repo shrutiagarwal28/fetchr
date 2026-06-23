@@ -9,6 +9,7 @@ venv/
 debug_*.png
 debug_page.html
 fetchr.json
+scrape_errors.log
 
 # Local dev tooling config
 .mcp.json

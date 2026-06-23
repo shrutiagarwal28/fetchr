@@ -69,11 +69,29 @@ def derive_age_years_approx(
     as_of defaults to UTC now and is injectable so tests can assert exact values
     without depending on the current wall clock. birth_date is guaranteed
     tz-aware (UTC) by _parse_iso_dt() in the scraper layer.
+
+    Bad-data guard: birthDate is shelter-entered free data, so a typo or clock
+    skew can produce a date *after* as_of. Rather than silently return a
+    negative age that corrupts every downstream feature, a future-dated
+    birth_date is logged at ERROR (persisted to SCRAPE_ERROR_LOG_PATH by the
+    CLI) and ignored — we fall through to age_range_label, then None. The
+    function stays pure: it only emits a log record, never touches the disk
+    itself.
     """
     if as_of is None:
         as_of = datetime.now(timezone.utc)
 
-    if birth_date is not None:
+    if birth_date is not None and birth_date > as_of:
+        # Impossible age — record the offending row and fall through so a
+        # valid age_range_label (if any) can still rescue this dog.
+        logger.error(
+            "Future-dated birth_date %s is after as_of %s — ignoring it to "
+            "avoid a negative age; falling back to age_range_label=%r",
+            birth_date.isoformat(),
+            as_of.isoformat(),
+            age_range_label,
+        )
+    elif birth_date is not None:
         age_years = (as_of - birth_date).days / 365.25
         return round(age_years, 2)
 
