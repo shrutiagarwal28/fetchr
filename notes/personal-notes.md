@@ -271,3 +271,19 @@ explore_graphql_intercept.py   → "What GraphQL calls does the browser make?"
 ```
 
 All three read `__NEXT_DATA__` or intercept network traffic — none are production code. They're run manually when you need to understand data shape before writing a scraper. `explore_listing_next_data.py` dumps the full `__NEXT_DATA__` blob from the search grid page. `explore_detail_page_props.py` navigates to a single dog's detail page and dumps only `props.pageProps` to find what else lives alongside `props.pageProps.animal`. `explore_graphql_intercept.py` attaches Playwright request/response listeners to capture every GraphQL call the browser makes on page load, then fires a schema introspection query to discover available operations. The outputs of all three are gitignored — they're debug snapshots, not source code.
+
+--------------------------------
+
+### Matching platform — what I described maps onto 3 existing docs
+
+**Category:** Design
+
+**Date:** 2026-07-12
+
+What I described isn't a design-from-scratch problem — it maps onto three docs that already exist:
+
+- **Signup + lifestyle questions + location matches** → `adopter-profile-matching-design.md`
+- **The scoring space those questions feed** → `matching-dimension-contract.md`
+- **The chatbot / search bar** → `natural-language-search-plan.md`
+
+So I'm not starting from zero. But three docs, three Claude sessions = three chances to drift. That drift is the real risk to watch.
