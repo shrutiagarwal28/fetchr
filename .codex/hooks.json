@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo '{\"systemMessage\": \"If this was a debug session, remember to update errors.md (date · error · root cause · fix · files changed).\"}'",
+            "statusMessage": "Checking for debug session..."
+          }
+        ]
+      }
+    ]
+  }
+}

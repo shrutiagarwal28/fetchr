@@ -1,0 +1,7 @@
+[mcp_servers.postgres]
+command = "npx"
+args = [
+    "-y",
+    "@modelcontextprotocol/server-postgres",
+    "postgresql://shruti@localhost:5432/fetchr",
+]
