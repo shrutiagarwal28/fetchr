@@ -72,7 +72,15 @@ def _make_session() -> SessionType:
     if _engine is None:
         _engine = create_engine(url)
 
-    Base.metadata.drop_all(_engine)
+    # drop_all() orders drops using only FK relationships declared in the ORM.
+    # Constraints added outside the ORM (e.g. fk_dog_profiles_breed_canonical_id,
+    # applied via migration) are invisible to it, so it can pick a drop order
+    # that violates them. DROP ... CASCADE sidesteps the ordering problem
+    # entirely — Postgres takes any dependent constraints down with the table.
+    with _engine.begin() as conn:
+        for table in Base.metadata.tables.values():
+            conn.execute(text(f'DROP TABLE IF EXISTS "{table.name}" CASCADE'))
+
     Base.metadata.create_all(_engine)
 
     # The FK on dog_profile_history.dog_profile_id is declared in the Alembic
